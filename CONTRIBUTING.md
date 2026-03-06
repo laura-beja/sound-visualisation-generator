@@ -15,7 +15,7 @@ Thank you for your interest in contributing to the Sound Visualisation Generator
 
 ## Code of Conduct
 
-By participating in this project, you agree to maintain a respectful and inclusive environment for everyone. Please be kind, constructive, and professional in all interactions.
+This project follows our [Code of Conduct](CODE_OF_CONDUCT.md). By participating, you are expected to uphold it.
 
 ## Getting Started
 
