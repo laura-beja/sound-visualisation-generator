@@ -38,7 +38,11 @@ By participating in this project, you agree to maintain a respectful and inclusi
 
 ### Prerequisites
 
-- TBC
+Before contributing, make sure you have the following installed:
+
+- Python 3.11
+- Git
+- pip
 
 
 ## How to Contribute
@@ -143,7 +147,10 @@ All code contributions should include tests:
 
 ### Running Tests
 
-- TBC
+```bash
+   ruff check .
+   ruff format --check .
+   pytest -q```
 
 
 ## Pull Request Process
@@ -166,12 +173,8 @@ When you're ready to submit your changes, please use our [**pull request templat
 
 3. **Test thoroughly**:
 
-  Run the same checks locally that CI runs:
-
-   ```bash
-   ruff check .
-   ruff format --check .
-   pytest -q```      
+   - Run the checks listed in the **Testing** section
+   - Make sure linting, formatting, and tests all pass before opening a pull request      
 
 4. **Commit your changes**:
    ```bash
