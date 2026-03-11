@@ -1,13 +1,21 @@
 import os
+import sys
 
 import pytest
 
-from svg.ui.app import SoundVisualisationApp
-
-pytestmark = pytest.mark.skipif(
-    os.environ.get("DISPLAY") is None,
-    reason="No display available for Tkinter GUI tests.",
+pytest.importorskip(
+    "tkinter",
+    reason="Tkinter is not available in this environment.",
+    exc_type=ImportError,
 )
+
+if sys.platform.startswith("linux") and os.environ.get("DISPLAY") is None:
+    pytest.skip(
+        "No display available for Tkinter GUI tests on headless Linux.",
+        allow_module_level=True,
+    )
+
+from svg.ui.app import SoundVisualisationApp
 
 
 def create_app():
