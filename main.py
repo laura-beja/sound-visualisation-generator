@@ -3,8 +3,9 @@ import argparse
 from svg.pipeline import generate_visualization
 from svg.ui.app import SoundVisualisationApp
 
-# main entry point for application, 
+# main entry point for application,
 # handles command line with arguments for input and output file, otherwise starts GUI
+
 
 def main():
     parser = argparse.ArgumentParser()

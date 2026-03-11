@@ -1,6 +1,8 @@
 from svg.ui.app import SoundVisualisationApp
 
-# basic test for GUI creation and default values, more tests can be added later for functionality and edge cases
+
+# Basic test for GUI creation and default values.
+# More tests can be added later.
 def create_app():
     app = SoundVisualisationApp()
     app.withdraw()  # hide GUI during tests
