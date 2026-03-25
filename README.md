@@ -32,6 +32,28 @@ source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 # Install dependencies
 pip install -r requirements.txt -r requirements-dev.txt
 ```
+## Releases
+
+Prebuilt application downloads are available from the project's [GitHub Releases](https://github.com/ahnewtown32/sound-visualisation-generator/releases) page.
+
+Each tagged release automatically builds platform-specific packages using GitHub Actions:
+
+- **Windows:** `SoundVisualiser-windows.zip`
+- **macOS:** `SoundVisualiser-macos.zip`
+
+This workflow uses platform-specific runners to build each package separately.
+
+### Running the application
+
+1. Download the appropriate file for your operating system
+2. Extract the `.zip` file
+3. Run:
+   - Windows: `SoundVisualiser.exe`
+   - macOS: `SoundVisualiser.app`
+
+> ⚠️ **macOS Note:**  
+> You may need to allow the application to run in System Settings the first time you open it.  
+> See the Wiki for instructions.
 
 ## Development Setup
 
