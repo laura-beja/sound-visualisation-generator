@@ -53,7 +53,7 @@ This workflow uses platform-specific runners to build each package separately.
 
 > ⚠️ **macOS Note:**  
 > You may need to allow the application to run in System Settings the first time you open it.  
-> See the [Running on macOS](https://github.com/ahnewtown32/sound-visualisation-generator/wiki/Releases-&-Distribution) page for instructions.
+> See the [Releases & Distribution](https://github.com/ahnewtown32/sound-visualisation-generator/wiki/Releases-&-Distribution) page for instructions.
 
 ## Development Setup
 
