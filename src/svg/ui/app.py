@@ -5,7 +5,33 @@ from PIL import Image
 
 ctk.set_appearance_mode("dark")
 ctk.set_default_color_theme("blue")
+class ToolTip:
+    def __init__(self, widget, text):
+        self.widget = widget
+        self.text = text
+        self.tooltip = None
 
+        widget.bind("<Enter>", self.show)
+        widget.bind("<Leave>", self.hide)
+
+    def show(self, event=None):
+        if self.tooltip:
+            return
+
+        x = self.widget.winfo_rootx() + 20
+        y = self.widget.winfo_rooty() + 20
+
+        self.tooltip = tw = ctk.CTkToplevel(self.widget)
+        tw.wm_overrideredirect(True)
+        tw.wm_geometry(f"+{x}+{y}")
+
+        label = ctk.CTkLabel(tw, text=self.text)
+        label.pack()
+
+    def hide(self, event=None):
+        if self.tooltip:
+            self.tooltip.destroy()
+            self.tooltip = None
 
 class SoundVisualisationApp(ctk.CTk):
     def __init__(self):
@@ -43,6 +69,7 @@ class SoundVisualisationApp(ctk.CTk):
             self.left_frame, text="Select Audio File", command=self.select_audio
         )
         self.select_button.pack(padx=15, pady=10, fill="x")
+        ToolTip(self.select_button, "Select a WAV audio file to generate visualisation")
 
         self.file_label = ctk.CTkLabel(
             self.left_frame, text="No file selected", wraplength=250, justify="left"
@@ -57,6 +84,7 @@ class SoundVisualisationApp(ctk.CTk):
         )
         self.scale_slider.set(1.0)
         self.scale_slider.pack(padx=15, pady=5, fill="x")
+        ToolTip(self.scale_slider, "Adjust visual scale based on audio")
 
         self.scale_value_label = ctk.CTkLabel(self.left_frame, text="1.0")
         self.scale_value_label.pack(pady=(0, 10))
@@ -69,6 +97,7 @@ class SoundVisualisationApp(ctk.CTk):
         )
         self.speed_slider.set(1.0)
         self.speed_slider.pack(padx=15, pady=5, fill="x")
+        ToolTip(self.speed_slider, "Adjust animation speed of the visualisation")
 
         self.speed_value_label = ctk.CTkLabel(self.left_frame, text="1.0")
         self.speed_value_label.pack(pady=(0, 10))
@@ -81,6 +110,7 @@ class SoundVisualisationApp(ctk.CTk):
         )
         self.detail_slider.set(5)
         self.detail_slider.pack(padx=15, pady=5, fill="x")
+        ToolTip(self.detail_slider, "Control level of visual detail in the output")
 
         self.detail_value_label = ctk.CTkLabel(self.left_frame, text="5")
         self.detail_value_label.pack(pady=(0, 10))
@@ -93,11 +123,13 @@ class SoundVisualisationApp(ctk.CTk):
         )
         self.colour_menu.set("Blue")
         self.colour_menu.pack(padx=15, pady=5, fill="x")
+        ToolTip(self.colour_menu, "Choose colour scheme for the visualisation")
 
         self.generate_button = ctk.CTkButton(
             self.left_frame, text="Generate Video", command=self.generate_video
         )
         self.generate_button.pack(padx=15, pady=(25, 10), fill="x")
+        ToolTip(self.generate_button, "Generate video from selected audio")
 
         self.status_label = ctk.CTkLabel(self.left_frame, text="Status: Waiting")
         self.status_label.pack(pady=(10, 5))
