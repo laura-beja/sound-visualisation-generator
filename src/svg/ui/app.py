@@ -5,6 +5,8 @@ from PIL import Image
 
 ctk.set_appearance_mode("dark")
 ctk.set_default_color_theme("blue")
+
+
 class ToolTip:
     def __init__(self, widget, text):
         self.widget = widget
@@ -32,6 +34,7 @@ class ToolTip:
         if self.tooltip:
             self.tooltip.destroy()
             self.tooltip = None
+
 
 class SoundVisualisationApp(ctk.CTk):
     def __init__(self):
