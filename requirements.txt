@@ -1,3 +1,9 @@
 # GUI depemdencies
 customtkinter
 pillow
+numpy 
+librosa 
+opencv-python 
+noise
+pygame
+tkinter

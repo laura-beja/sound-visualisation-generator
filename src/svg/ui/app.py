@@ -1,11 +1,13 @@
-from tkinter import filedialog
 
+from tkinter import filedialog
 import customtkinter as ctk
 from PIL import Image, ImageTk
 import pygame
 import tkinter as tk
 import numpy as np
 import wave
+from src.svg.audio_loader import load_wav_audio
+from src.svg.animator import get_radius_from_chunk, get_delay_ms
 
 #  py -3.11 -m venv .venv
 # .venv\Scripts\Activate.ps1
@@ -58,13 +60,6 @@ class SoundVisualisationApp(ctk.CTk):
             self.left_frame, text="Controls", font=ctk.CTkFont(size=22, weight="bold")
         )
         title_label.pack(pady=(15, 20))
-
-        # self.test_button = ctk.CTkButton(
-        #     self.left_frame,
-        #     text="Test Audio Radius",
-        #     command=self.start_audio_visual
-        # )
-        # self.test_button.pack(padx=15, pady=10, fill="x")
 
         self.select_button = ctk.CTkButton(
             self.left_frame,
@@ -268,56 +263,20 @@ class SoundVisualisationApp(ctk.CTk):
             return False
 
         try:
-            with wave.open(self.audio_file, "rb") as wav_file:
-                self.sample_rate = wav_file.getframerate()
-                print("Sample rate:", self.sample_rate)
-                n_channels = wav_file.getnchannels()
-                sampwidth = wav_file.getsampwidth()
-                n_frames = wav_file.getnframes()
+            audio, sample_rate = load_wav_audio(self.audio_file)
 
-                raw_data = wav_file.readframes(n_frames)
-
-            if sampwidth == 2:
-                audio = np.frombuffer(raw_data, dtype=np.int16)
-                max_value = 32768.0
-            elif sampwidth == 1:
-                audio = np.frombuffer(raw_data, dtype=np.uint8).astype(np.float32) - 128.0
-                max_value = 128.0
-            elif sampwidth == 3:
-                print("24-bit audio detected")
-
-                audio = np.frombuffer(raw_data, dtype=np.uint8)
-
-                # reshape into 3-byte chunks
-                audio = audio.reshape(-1, 3)
-
-                # convert 3 bytes → 32-bit int
-                audio = (
-                    audio[:, 0].astype(np.int32)
-                    | (audio[:, 1].astype(np.int32) << 8)
-                    | (audio[:, 2].astype(np.int32) << 16)
-                )
-
-                # convert signed
-                audio = np.where(audio >= 0x800000, audio - 0x1000000, audio)
-
-                max_value = 8388608.0
-            else:
-                self.status_label.configure(text="Status: Unsupported WAV sample width")
-                return False
-
-            if n_channels > 1:
-                audio = audio.reshape(-1, n_channels)
-                audio = audio.mean(axis=1)
-
-            self.audio_data = audio.astype(np.float32) / max_value
+            self.audio_data = audio
+            self.sample_rate = sample_rate
             self.current_chunk = 0
+
+            print("Sample rate:", self.sample_rate)
 
             self.status_label.configure(text="Status: Audio buffered")
             return True
 
         except Exception as e:
             self.status_label.configure(text=f"Status: Buffer error: {e}")
+            print("buffer_audio error:", e)
             return False
 
     def draw_circle(self, radius):
@@ -340,48 +299,32 @@ class SoundVisualisationApp(ctk.CTk):
 
     def animate_from_audio(self):
         if self.audio_data is None or not self.is_animating:
-            print("animat not worling, no audio data")
+            print("animate not working, no audio data")
             return
 
-        start = self.current_chunk
-        end = start + self.chunk_size
+        radius, next_chunk = get_radius_from_chunk(
+            audio_data=self.audio_data,
+            current_chunk=self.current_chunk,
+            chunk_size=self.chunk_size,
+            min_radius=30,
+            max_radius=120,
+            scale=400
+        )
 
-        if start >= len(self.audio_data):
+        if radius is None:
             self.is_animating = False
             self.is_playing = False
             self.start_button.configure(text="Play", command=self.play_audio)
             self.status_label.configure(text="Status: Animation complete")
             return
 
-        chunk = self.audio_data[start:end]
-
-        if len(chunk) == 0:
-            self.is_animating = False
-            self.is_playing = False
-            self.start_button.configure(text="Play", command=self.play_audio)
-            return
-
-        volume = np.sqrt(np.mean(chunk ** 2))
-
-        min_radius = 30
-        max_radius = 120
-        radius = int(min_radius + volume * 400)
-        radius = max(min_radius, min(radius, max_radius))
-
         self.draw_circle(radius)
+        self.current_chunk = next_chunk
 
-        self.current_chunk += self.chunk_size
-
-        delay_ms = max(1, int((self.chunk_size / self.sample_rate) * 1000)) 
-        self.after(10, self.animate_from_audio)
+        delay_ms = get_delay_ms(self.chunk_size, self.sample_rate)
+        self.after(delay_ms, self.animate_from_audio)
 
     def start_audio_visual(self):
-        # print("start_audio_visual")
-        # return
-        # if not self.buffer_audio():
-        #     print("no audio buffer")
-        #     return
-
         self.is_animating = True
         self.current_chunk = 0
         self.status_label.configure(text="Status: Animating from audio")
