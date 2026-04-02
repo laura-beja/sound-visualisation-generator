@@ -1,4 +1,3 @@
-
 import tkinter as tk
 from tkinter import filedialog
 
@@ -17,7 +16,6 @@ ctk.set_default_color_theme("blue")
 
 
 class SoundVisualisationApp(ctk.CTk):
-
     def __init__(self):
         super().__init__()
         print("UI running 2")
@@ -62,17 +60,11 @@ class SoundVisualisationApp(ctk.CTk):
         title_label.pack(pady=(15, 20))
 
         self.select_button = ctk.CTkButton(
-            self.left_frame,
-            text="Select Audio File",
-            command=self.select_audio
+            self.left_frame, text="Select Audio File", command=self.select_audio
         )
         self.select_button.pack(padx=15, pady=10, fill="x")
 
-        self.start_button = ctk.CTkButton(
-            self.left_frame,
-            text="Play",
-            command=self.play_audio
-        )
+        self.start_button = ctk.CTkButton(self.left_frame, text="Play", command=self.play_audio)
         self.start_button.pack(padx=15, pady=10, fill="x")
 
         self.file_label = ctk.CTkLabel(
@@ -140,19 +132,12 @@ class SoundVisualisationApp(ctk.CTk):
         preview_label.pack(pady=(15, 20))
 
         self.preview_box = tk.Canvas(
-            self.right_frame,
-            width=500,
-            height=320,
-            bg="#1a1a1a",
-            highlightthickness=0
+            self.right_frame, width=500, height=320, bg="#1a1a1a", highlightthickness=0
         )
         self.preview_box.pack(padx=20, pady=10)
 
         self.output_label = ctk.CTkLabel(
-            self.right_frame,
-            text="Output file: Not generated yet",
-            wraplength=450,
-            justify="left"
+            self.right_frame, text="Output file: Not generated yet", wraplength=450, justify="left"
         )
         self.output_label.pack(pady=(10, 15))
 
@@ -171,8 +156,7 @@ class SoundVisualisationApp(ctk.CTk):
 
     def select_audio(self):
         file_path = filedialog.askopenfilename(
-            title="Select Audio File",
-            filetypes=[("WAV files", "*.wav"), ("All files", "*.*")]
+            title="Select Audio File", filetypes=[("WAV files", "*.wav"), ("All files", "*.*")]
         )
 
         if file_path:
@@ -227,11 +211,7 @@ class SoundVisualisationApp(ctk.CTk):
         self.progress_bar.set(0.25)
 
         self.preview_box.delete("all")
-        self.preview_box.create_oval(
-            150, 60, 350, 260,
-            outline="cyan",
-            width=1
-        )
+        self.preview_box.create_oval(150, 60, 350, 260, outline="cyan", width=1)
 
         self.progress_bar.set(0.75)
 
@@ -245,18 +225,14 @@ class SoundVisualisationApp(ctk.CTk):
                 f"Scale {scale:.1f}, Speed {speed:.1f}, "
                 f"Detail {detail}, Colour {colour}"
             )
-)
+        )
 
     def load_preview_image(self, image_path):
         image = Image.open(image_path).resize((500, 320))
         self.preview_tk = ImageTk.PhotoImage(image)
 
         self.preview_box.delete("all")
-        self.preview_box.create_image(
-            0, 0,
-            anchor="nw",
-            image=self.preview_tk
-        )
+        self.preview_box.create_image(0, 0, anchor="nw", image=self.preview_tk)
 
     def clear_preview(self):
         self.preview_box.delete("all")
@@ -293,12 +269,7 @@ class SoundVisualisationApp(ctk.CTk):
         cy = canvas_height // 2
 
         self.preview_box.create_oval(
-            cx - radius,
-            cy - radius,
-            cx + radius,
-            cy + radius,
-            outline="cyan",
-            width=1
+            cx - radius, cy - radius, cx + radius, cy + radius, outline="cyan", width=1
         )
 
     def animate_from_audio(self):
@@ -312,7 +283,7 @@ class SoundVisualisationApp(ctk.CTk):
             chunk_size=self.chunk_size,
             min_radius=30,
             max_radius=120,
-            scale=400
+            scale=400,
         )
 
         if radius is None:

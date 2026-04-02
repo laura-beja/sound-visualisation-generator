@@ -20,7 +20,7 @@ def get_radius_from_chunk(
     if len(chunk) == 0:
         return None, current_chunk
 
-    volume = np.sqrt(np.mean(chunk ** 2))
+    volume = np.sqrt(np.mean(chunk**2))
 
     radius = int(min_radius + volume * scale)
     radius = max(min_radius, min(radius, max_radius))

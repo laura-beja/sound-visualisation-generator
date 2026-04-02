@@ -10,7 +10,7 @@ import numpy as np
 def load_wav_audio(file_path):
     if not file_path:
         raise ValueError("No audio file path.")
-    
+
     with wave.open(file_path, "rb") as wav_file:
         sample_rate = wav_file.getframerate()
         n_channels = wav_file.getnchannels()
@@ -51,7 +51,6 @@ def load_wav_audio(file_path):
         audio = audio.mean(axis=1)
 
     # normalize audio to values from -1 to 1
-    audio = audio / max_value 
+    audio = audio / max_value
 
     return audio, sample_rate
-
