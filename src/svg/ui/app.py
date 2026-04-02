@@ -1,13 +1,13 @@
 
-from tkinter import filedialog
-import customtkinter as ctk
-from PIL import Image, ImageTk
-import pygame
 import tkinter as tk
-import numpy as np
-import wave
+from tkinter import filedialog
+
+import customtkinter as ctk
+import pygame
+from PIL import Image, ImageTk
+
+from src.svg.animator import get_delay_ms, get_radius_from_chunk
 from src.svg.audio_loader import load_wav_audio
-from src.svg.animator import get_radius_from_chunk, get_delay_ms
 
 #  py -3.11 -m venv .venv
 # .venv\Scripts\Activate.ps1
@@ -240,8 +240,12 @@ class SoundVisualisationApp(ctk.CTk):
 
         self.progress_bar.set(1.0)
         self.status_label.configure(
-            text=f"Status: Generation complete | Scale {scale:.1f}, Speed {speed:.1f}, Detail {detail}, Colour {colour}"
-        )
+            text=(
+                f"Status: Generation complete | "
+                f"Scale {scale:.1f}, Speed {speed:.1f}, "
+                f"Detail {detail}, Colour {colour}"
+            )
+)
 
     def load_preview_image(self, image_path):
         image = Image.open(image_path).resize((500, 320))

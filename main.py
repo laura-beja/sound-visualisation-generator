@@ -2,7 +2,6 @@ import argparse
 
 from svg.pipeline import generate_visualization
 from svg.ui.app import SoundVisualisationApp
-from svg.audio_loader import load_wav_audio
 
 # main entry point for application,
 # handles command line with arguments for input and output file, otherwise starts GUI
