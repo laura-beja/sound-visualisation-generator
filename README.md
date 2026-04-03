@@ -108,9 +108,17 @@ We recommend creating a `.venv` virtual environment inside the repository to iso
 
 ### 1. Create a virtual environment
 
+## Windows
+```bash
+py -3.11 -m venv .venv
+.venv\Scripts\Activate.ps1  
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate   # On Windows: .venv\Scripts\activate
+```
+If PowerShell blocks activation, run this once in a normal PowerShell window:
+```bash
+Set-ExecutionPolicy -Scope CurrentUser RemoteSigned
 ```
 
 ### 2. Install dependencies
