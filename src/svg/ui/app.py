@@ -5,8 +5,13 @@ import customtkinter as ctk
 import pygame
 from PIL import Image, ImageTk
 
-from src.svg.animator import get_delay_ms, get_radius_from_chunk
 from src.svg.audio_loader import load_wav_audio
+from src.svg.animator import (
+    get_delay_ms,
+    get_radius_from_chunk,
+    get_frequency_bands,
+    draw_frequency_bands,
+)
 
 #  py -3.11 -m venv .venv
 # .venv\Scripts\Activate.ps1
@@ -14,6 +19,8 @@ from src.svg.audio_loader import load_wav_audio
 ctk.set_appearance_mode("dark")
 ctk.set_default_color_theme("blue")
 
+do_circle = False
+do_spectrum = True
 
 class SoundVisualisationApp(ctk.CTk):
     def __init__(self):
@@ -276,28 +283,61 @@ class SoundVisualisationApp(ctk.CTk):
         if self.audio_data is None or not self.is_animating:
             print("animate not working, no audio data")
             return
+        
+        if do_circle == True:
+            radius, next_chunk = get_radius_from_chunk(
+                audio_data=self.audio_data,
+                current_chunk=self.current_chunk,
+                chunk_size=self.chunk_size,
+                min_radius=30,
+                max_radius=120,
+                scale=400,
+            )
 
-        radius, next_chunk = get_radius_from_chunk(
-            audio_data=self.audio_data,
-            current_chunk=self.current_chunk,
-            chunk_size=self.chunk_size,
-            min_radius=30,
-            max_radius=120,
-            scale=400,
-        )
+            if radius is None:
+                self.is_animating = False
+                self.is_playing = False
+                self.start_button.configure(text="Play", command=self.play_audio)
+                self.status_label.configure(text="Status: Animation complete")
+                return
 
-        if radius is None:
-            self.is_animating = False
-            self.is_playing = False
-            self.start_button.configure(text="Play", command=self.play_audio)
-            self.status_label.configure(text="Status: Animation complete")
-            return
+            self.draw_circle(radius)
+            self.current_chunk = next_chunk
 
-        self.draw_circle(radius)
-        self.current_chunk = next_chunk
+            delay_ms = get_delay_ms(self.chunk_size, self.sample_rate)
+            self.after(delay_ms, self.animate_from_audio)
 
-        delay_ms = get_delay_ms(self.chunk_size, self.sample_rate)
-        self.after(delay_ms, self.animate_from_audio)
+        if do_spectrum == True:
+            start = self.current_chunk
+            end = start + self.chunk_size
+
+            if start >= len(self.audio_data):
+                self.is_animating = False
+                self.is_playing = False
+                self.start_button.configure(text="Play", command=self.play_audio)
+                self.status_label.configure(text="Status: Animation complete")
+                return
+
+            chunk = self.audio_data[start:end]
+
+            if len(chunk) == 0:
+                self.is_animating = False
+                self.is_playing = False
+                self.start_button.configure(text="Play", command=self.play_audio)
+                return
+
+            bands = get_frequency_bands(
+                chunk=chunk,
+                sample_rate=self.sample_rate,
+                num_bands=32
+            )
+
+            draw_frequency_bands(self.preview_box, bands)
+
+            self.current_chunk += self.chunk_size
+
+            delay_ms = max(1, int((self.chunk_size / self.sample_rate) * 1000))
+            self.after(delay_ms, self.animate_from_audio)  
 
     def start_audio_visual(self):
         self.is_animating = True
