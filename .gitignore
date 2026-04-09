@@ -13,6 +13,7 @@ __pycache__/
 
 
 # Build / packaging
+*.spec
 build/
 dist/
 *.egg-info/

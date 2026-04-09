@@ -13,7 +13,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [windows-latest, macos-latest]
+        os: [windows-latest, macos-latest, ubuntu-latest]
 
     runs-on: ${{ matrix.os }}
 
@@ -43,6 +43,12 @@ jobs:
         if: runner.os == 'macOS'
         run: |
           python -m PyInstaller --windowed --name SoundVisualiser --paths src main.py
+
+      - name: Build Linux executable
+        if: runner.os == 'Linux'
+        run: |
+          python -m PyInstaller --onefile --windowed --name SoundVisualiser --paths src main.py
+
       - name: Package Windows artifact
         if: runner.os == 'Windows'
         shell: pwsh
@@ -53,6 +59,11 @@ jobs:
         if: runner.os == 'macOS'
         run: |
           ditto -c -k --sequesterRsrc --keepParent dist/SoundVisualiser.app SoundVisualiser-macos.zip
+
+      - name: Package Linux artifact
+        if: runner.os == 'Linux'
+        run: |
+          tar -czf SoundVisualiser-linux.tar.gz -C dist SoundVisualiser
 
       - name: Upload Windows artifact
         if: runner.os == 'Windows'
@@ -68,7 +79,15 @@ jobs:
           name: macos-build
           path: SoundVisualiser-macos.zip
 
+      - name: Upload Linux artifact
+        if: runner.os == 'Linux'
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-build
+          path: SoundVisualiser-linux.tar.gz
+
   release:
+    if: startsWith(github.ref, 'refs/tags/v')
     needs: build
     runs-on: ubuntu-latest
 
@@ -88,3 +107,4 @@ jobs:
           files: |
             artifacts/windows-build/SoundVisualiser-windows.zip
             artifacts/macos-build/SoundVisualiser-macos.zip
+            artifacts/linux-build/SoundVisualiser-linux.tar.gz
