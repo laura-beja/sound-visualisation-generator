@@ -38,25 +38,30 @@ def get_frequency_bands(chunk, sample_rate, num_bands=32):
     if len(chunk) == 0:
         return np.zeros(num_bands, dtype=np.float32)
 
-    # optional windowing to reduce FFT leakage
     window = np.hanning(len(chunk))
-    windowed_chunk = chunk * window
+    chunk = chunk * window
 
-    # real FFT
-    fft_result = np.fft.rfft(windowed_chunk)
+    fft_result = np.fft.rfft(chunk)
     magnitudes = np.abs(fft_result)
 
-    # avoid DC dominance
     if len(magnitudes) > 0:
         magnitudes[0] = 0
 
-    # split spectrum into bands
-    band_edges = np.linspace(0, len(magnitudes), num_bands + 1, dtype=int)
+    # log
+    min_bin = 1
+    max_bin = len(magnitudes) - 1
+
+    log_edges = np.logspace(
+        np.log10(min_bin),
+        np.log10(max_bin),
+        num_bands + 1
+    ).astype(int)
+
     bands = np.zeros(num_bands, dtype=np.float32)
 
     for i in range(num_bands):
-        start = band_edges[i]
-        end = band_edges[i + 1]
+        start = log_edges[i]
+        end = log_edges[i + 1]
 
         if end > start:
             bands[i] = np.mean(magnitudes[start:end])

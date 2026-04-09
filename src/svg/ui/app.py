@@ -60,6 +60,8 @@ class SoundVisualisationApp(ctk.CTk):
         self.build_left_side()
         self.build_right_side()
 
+        self.previous_bands = None
+
     def build_left_side(self):
         title_label = ctk.CTkLabel(
             self.left_frame, text="Controls", font=ctk.CTkFont(size=22, weight="bold")
@@ -332,7 +334,14 @@ class SoundVisualisationApp(ctk.CTk):
                 num_bands=32
             )
 
-            draw_frequency_bands(self.preview_box, bands)
+            if self.previous_bands is None:
+                smoothed = bands
+            else:
+                smoothed = 0.8 * self.previous_bands + 0.2 * bands
+
+            self.previous_bands = smoothed
+
+            draw_frequency_bands(self.preview_box, smoothed)
 
             self.current_chunk += self.chunk_size
 
