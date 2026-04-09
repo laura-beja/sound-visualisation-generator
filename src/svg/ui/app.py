@@ -10,7 +10,7 @@ from src.svg.animator import (
     get_delay_ms,
     get_radius_from_chunk,
     get_frequency_bands,
-    draw_frequency_bands,
+    update_frequency_bands,
 )
 
 #  py -3.11 -m venv .venv
@@ -153,6 +153,26 @@ class SoundVisualisationApp(ctk.CTk):
         self.progress_bar = ctk.CTkProgressBar(self.right_frame, width=450)
         self.progress_bar.pack(padx=20, pady=10, fill="x")
         self.progress_bar.set(0)
+
+        if do_spectrum == True:
+            self.num_bands = 32
+            self.band_lines = []
+
+            canvas_width = 500
+            canvas_height = 320
+            baseline_y = canvas_height // 2
+            band_width = canvas_width / self.num_bands
+
+            for i in range(self.num_bands):
+                x = i * band_width + band_width / 2
+
+                line = self.preview_box.create_line(
+                    x, baseline_y,
+                    x, baseline_y,
+                    fill="cyan",
+                    width=2
+                )
+                self.band_lines.append(line) 
 
     def update_scale_value(self, value):
         self.scale_value_label.configure(text=f"{value:.1f}")
@@ -341,7 +361,7 @@ class SoundVisualisationApp(ctk.CTk):
 
             self.previous_bands = smoothed
 
-            draw_frequency_bands(self.preview_box, smoothed)
+            update_frequency_bands(self, smoothed)
 
             self.current_chunk += self.chunk_size
 

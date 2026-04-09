@@ -73,30 +73,18 @@ def get_frequency_bands(chunk, sample_rate, num_bands=32):
 
     return bands
 
-def draw_frequency_bands(preview_box, bands):
-    preview_box.delete("all")
-
-    canvas_width = 500
+def update_frequency_bands(self, bands):
     canvas_height = 320
-
     baseline_y = canvas_height // 2
-    num_bands = len(bands)
-    band_width = canvas_width / num_bands
-    max_bar_height = 120
+    max_height = 120
 
-    preview_box.create_line(
-        0, baseline_y,
-        canvas_width, baseline_y,
-        fill="gray"
-    )
+    for i, band in enumerate(bands):
+        line = self.band_lines[i]
 
-    for i, band_value in enumerate(bands):
-        x = i * band_width + band_width / 2
-        bar_height = band_value * max_bar_height
+        height = band * max_height
 
-        preview_box.create_line(
-            x, baseline_y,
-            x, baseline_y - bar_height,
-            fill="cyan",
-            width=2
+        self.preview_box.coords(
+            line,
+            self.preview_box.coords(line)[0], baseline_y,
+            self.preview_box.coords(line)[0], baseline_y - height
         )
