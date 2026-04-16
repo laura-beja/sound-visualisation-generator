@@ -170,9 +170,7 @@ class SoundVisualisationApp(ctk.CTk):
         )
         preview_label.pack(pady=(15, 20))
 
-        self.preview_box = tk.Canvas(
-            self.right_frame, bg="#1a1a1a", highlightthickness=0
-        )
+        self.preview_box = tk.Canvas(self.right_frame, bg="#1a1a1a", highlightthickness=0)
         self.preview_box.pack(padx=20, pady=10, fill="both", expand=True)
 
         self.preview_box.configure(width=500, height=320)
