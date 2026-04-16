@@ -57,6 +57,7 @@ class SoundVisualisationApp(ctk.CTk):
 
         self.is_playing = False
         self.is_animating = False
+        self.controls_visible = True
 
         self.audio_data = None
         self.sample_rate = 0
@@ -68,7 +69,7 @@ class SoundVisualisationApp(ctk.CTk):
 
         # Main window layout
         self.grid_columnconfigure(0, weight=1)
-        self.grid_columnconfigure(1, weight=2)
+        self.grid_columnconfigure(1, weight=3)
         self.grid_rowconfigure(0, weight=1)
 
         # Left frame = controls
@@ -94,8 +95,8 @@ class SoundVisualisationApp(ctk.CTk):
         self.select_button.pack(padx=15, pady=10, fill="x")
         ToolTip(self.select_button, "Select a WAV audio file to generate visualisation")
 
-        self.start_button = ctk.CTkButton(self.left_frame, text="Play", command=self.play_audio)
-        self.start_button.pack(padx=15, pady=10, fill="x")
+        # self.start_button = ctk.CTkButton(self.left_frame, text="Play", command=self.play_audio)
+        # self.start_button.pack(padx=15, pady=10, fill="x")
 
         self.file_label = ctk.CTkLabel(
             self.left_frame, text="No file selected", wraplength=250, justify="left"
@@ -161,18 +162,44 @@ class SoundVisualisationApp(ctk.CTk):
         self.status_label.pack(pady=(10, 5))
 
     def build_right_side(self):
+        self.right_frame.grid_rowconfigure(1, weight=1)
+        self.right_frame.grid_columnconfigure(0, weight=1)
+
         preview_label = ctk.CTkLabel(
             self.right_frame, text="Preview", font=ctk.CTkFont(size=22, weight="bold")
         )
         preview_label.pack(pady=(15, 20))
 
         self.preview_box = tk.Canvas(
-            self.right_frame, width=500, height=320, bg="#1a1a1a", highlightthickness=0
+            self.right_frame, bg="#1a1a1a", highlightthickness=0
         )
-        self.preview_box.pack(padx=20, pady=10)
+        self.preview_box.pack(padx=20, pady=10, fill="both", expand=True)
+
+        self.preview_box.configure(width=500, height=320)
+
+        self.preview_controls_frame = ctk.CTkFrame(self.right_frame, fg_color="transparent")
+        self.preview_controls_frame.pack(padx=20, pady=(0, 10), fill="x")
+
+        self.preview_controls_frame.grid_columnconfigure(0, weight=1)
+        self.preview_controls_frame.grid_columnconfigure(1, weight=1)
+
+        self.start_button = ctk.CTkButton(
+            self.preview_controls_frame, text="Play", command=self.play_audio
+        )
+        self.start_button.grid(row=0, column=0, padx=(0, 10), sticky="ew")
+
+        self.toggle_controls_button = ctk.CTkButton(
+            self.preview_controls_frame,
+            text="Hide Controls",
+            command=self.toggle_controls,
+        )
+        self.toggle_controls_button.grid(row=0, column=1, padx=(10, 0), sticky="ew")
 
         self.output_label = ctk.CTkLabel(
-            self.right_frame, text="Output file: Not generated yet", wraplength=450, justify="left"
+            self.right_frame,
+            text="Output file: Not generated yet",
+            wraplength=450,
+            justify="left",
         )
         self.output_label.pack(pady=(10, 15))
 
@@ -262,6 +289,20 @@ class SoundVisualisationApp(ctk.CTk):
             )
         )
 
+    def toggle_controls(self):
+        if self.controls_visible:
+            self.left_frame.grid_remove()
+            self.grid_columnconfigure(0, weight=0)
+            self.grid_columnconfigure(1, weight=1)
+            self.toggle_controls_button.configure(text="Show Controls")
+            self.controls_visible = False
+        else:
+            self.left_frame.grid()
+            self.grid_columnconfigure(0, weight=1)
+            self.grid_columnconfigure(1, weight=3)
+            self.toggle_controls_button.configure(text="Hide Controls")
+            self.controls_visible = True
+
     def load_preview_image(self, image_path):
         image = Image.open(image_path).resize((500, 320))
         self.preview_tk = ImageTk.PhotoImage(image)
@@ -297,8 +338,14 @@ class SoundVisualisationApp(ctk.CTk):
     def draw_circle(self, radius):
         self.preview_box.delete("all")
 
-        canvas_width = 500
-        canvas_height = 320
+        self.preview_box.update_idletasks()
+
+        canvas_width = self.preview_box.winfo_width()
+        canvas_height = self.preview_box.winfo_height()
+
+        if canvas_width <= 1 or canvas_height <= 1:
+            canvas_width = 500
+            canvas_height = 320
 
         cx = canvas_width // 2
         cy = canvas_height // 2
