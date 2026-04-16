@@ -7,6 +7,7 @@ from PIL import Image, ImageTk
 
 from src.svg.animator import get_delay_ms, get_radius_from_chunk
 from src.svg.audio_loader import load_wav_audio
+from svg.video_producer import create_video_file
 
 #  py -3.11 -m venv .venv
 # .venv\Scripts\Activate.ps1
@@ -236,31 +237,29 @@ class SoundVisualisationApp(ctk.CTk):
         if self.audio_file == "":
             self.status_label.configure(text="Status: Please select an audio file")
             return
-
-        scale = self.scale_slider.get()
-        speed = self.speed_slider.get()
-        detail = int(self.detail_slider.get())
-        colour = self.colour_menu.get()
-
-        self.status_label.configure(text="Status: Generating...")
-        self.progress_bar.set(0.25)
-
-        self.preview_box.delete("all")
-        self.preview_box.create_oval(150, 60, 350, 260, outline="cyan", width=1)
-
-        self.progress_bar.set(0.75)
-
+        
+        self.status_label.configure(text="Status: Generating video...")
+        self.progress_bar.set(0.2)
+        
         output_path = "output/visualization.mp4"
-        self.output_label.configure(text=f"Output file: {output_path}")
 
-        self.progress_bar.set(1.0)
-        self.status_label.configure(
-            text=(
-                f"Status: Generation complete | "
-                f"Scale {scale:.1f}, Speed {speed:.1f}, "
-                f"Detail {detail}, Colour {colour}"
+        try:
+            # Call the export function from video_producer.py
+            create_video_file(
+                audio_file=self.audio_file,
+                output_file=output_path,
             )
-        )
+
+            # If successful, update the GUI
+            self.progress_bar.set(1.0)
+            self.output_label.configure(text=f"Output file: {output_path}")
+            self.status_label.configure(text="Status: Generation complete")
+
+        except Exception as e:
+            # If something fails, show the error in the GUI and terminal
+            self.progress_bar.set(0)
+            self.status_label.configure(text=f"Status: Generation failed: {e}")
+            print("generate_video error:", e)
 
     def load_preview_image(self, image_path):
         image = Image.open(image_path).resize((500, 320))
