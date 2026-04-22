@@ -1,13 +1,17 @@
 import tkinter as tk
 from tkinter import filedialog
+import os
+import shutil
+import threading
+import tempfile
 
 import customtkinter as ctk
 import pygame
 from PIL import Image, ImageTk
 
-from src.svg.animator import get_delay_ms, get_radius_from_chunk
-from src.svg.audio_loader import load_wav_audio
-from svg.video_producer import create_video_file
+from svg.animator import get_delay_ms, get_radius_from_chunk
+from svg.audio_loader import load_wav_audio
+from svg.video_producer import create_video_file, encode_frames_to_video, save_circle_frame
 
 #  py -3.11 -m venv .venv
 # .venv\Scripts\Activate.ps1
@@ -63,6 +67,13 @@ class SoundVisualisationApp(ctk.CTk):
         self.sample_rate = 0
         self.current_chunk = 0
         self.chunk_size = 1024
+        self.frame_rate = 1
+
+        self.record_frames = False
+        self.frames_dir = ""
+        self.frame_index = 0
+        self.live_output_path = "output/live_visualization.mp4"
+        self.is_encoding = False
 
         # pygame.mixer.init()
         pygame.mixer.init(frequency=44100, size=-16, channels=2)
@@ -146,7 +157,9 @@ class SoundVisualisationApp(ctk.CTk):
         self.colour_label.pack(pady=(10, 0))
 
         self.colour_menu = ctk.CTkOptionMenu(
-            self.left_frame, values=["Blue", "Purple", "Grayscale"]
+            self.left_frame,
+            values=["Blue", "Purple", "Grayscale"],
+            command=self.on_colour_change,
         )
         self.colour_menu.set("Blue")
         self.colour_menu.pack(padx=15, pady=5, fill="x")
@@ -157,6 +170,13 @@ class SoundVisualisationApp(ctk.CTk):
         )
         self.generate_button.pack(padx=15, pady=(25, 10), fill="x")
         ToolTip(self.generate_button, "Generate video from selected audio")
+
+        self.record_live_var = tk.BooleanVar(value=True)
+        self.record_live_switch = ctk.CTkSwitch(
+            self.left_frame, text="Record while playing", variable=self.record_live_var
+        )
+        ToolTip(self.record_live_switch, "Toggle whether to record frames while playing audio")
+        self.record_live_switch.pack(padx=15, pady=(5, 10), fill="x")
 
         self.status_label = ctk.CTkLabel(self.left_frame, text="Status: Waiting")
         self.status_label.pack(pady=(10, 5))
@@ -181,6 +201,9 @@ class SoundVisualisationApp(ctk.CTk):
         self.progress_bar.pack(padx=20, pady=10, fill="x")
         self.progress_bar.set(0)
 
+        self.progress_mode_label = ctk.CTkLabel(self.right_frame, text="Mode: Idle")
+        self.progress_mode_label.pack(pady=(0, 10))
+
     def update_scale_value(self, value):
         self.scale_value_label.configure(text=f"{value:.1f}")
 
@@ -189,6 +212,20 @@ class SoundVisualisationApp(ctk.CTk):
 
     def update_detail_value(self, value):
         self.detail_value_label.configure(text=f"{int(value)}")
+
+    def on_colour_change(self, _value):
+        if self.is_animating and self.audio_data is not None:
+            preview_chunk = max(0, self.current_chunk - self.chunk_size)
+            radius, _ = get_radius_from_chunk(
+                audio_data=self.audio_data,
+                current_chunk=preview_chunk,
+                chunk_size=self.chunk_size,
+                min_radius=30,
+                max_radius=120,
+                scale=400,
+            )
+            if radius is not None:
+                self.draw_circle(radius)
 
     def select_audio(self):
         file_path = filedialog.askopenfilename(
@@ -216,9 +253,20 @@ class SoundVisualisationApp(ctk.CTk):
         self.is_playing = True
         self.is_animating = True
         self.current_chunk = 0
+        self.frame_rate = max(1, self.sample_rate // self.chunk_size)
+
+        if self.record_live_var.get():
+            self.start_live_recording()
+        else:
+            self.stop_live_recording(clear_only=True)
 
         self.start_button.configure(text="Stop", command=self.stop_audio)
-        self.status_label.configure(text="Status: Playing audio")
+        if self.record_frames:
+            self.status_label.configure(text="Status: Playing + recording")
+            self.progress_mode_label.configure(text="Mode: Recording while playing")
+        else:
+            self.status_label.configure(text="Status: Playing audio")
+            self.progress_mode_label.configure(text="Mode: Preview only")
 
         self.animate_from_audio()
 
@@ -230,6 +278,10 @@ class SoundVisualisationApp(ctk.CTk):
 
         self.start_button.configure(text="Play", command=self.play_audio)
         self.status_label.configure(text="Status: Audio stopped")
+        self.progress_mode_label.configure(text="Mode: Idle")
+
+        if self.record_frames:
+            self.finish_live_recording()
 
         self.clear_preview()
 
@@ -240,6 +292,7 @@ class SoundVisualisationApp(ctk.CTk):
         
         self.status_label.configure(text="Status: Generating video...")
         self.progress_bar.set(0.2)
+        self.progress_mode_label.configure(text="Mode: Generating video")
         
         output_path = "output/visualization.mp4"
 
@@ -248,17 +301,20 @@ class SoundVisualisationApp(ctk.CTk):
             create_video_file(
                 audio_file=self.audio_file,
                 output_file=output_path,
+                colour_mode=self.colour_menu.get(),
             )
 
             # If successful, update the GUI
             self.progress_bar.set(1.0)
             self.output_label.configure(text=f"Output file: {output_path}")
             self.status_label.configure(text="Status: Generation complete")
+            self.progress_mode_label.configure(text="Mode: Generation complete")
 
         except Exception as e:
             # If something fails, show the error in the GUI and terminal
             self.progress_bar.set(0)
             self.status_label.configure(text=f"Status: Generation failed: {e}")
+            self.progress_mode_label.configure(text="Mode: Generation failed")
             print("generate_video error:", e)
 
     def load_preview_image(self, image_path):
@@ -301,10 +357,90 @@ class SoundVisualisationApp(ctk.CTk):
 
         cx = canvas_width // 2
         cy = canvas_height // 2
+        circle_colour = self.get_selected_colour_hex()
 
         self.preview_box.create_oval(
-            cx - radius, cy - radius, cx + radius, cy + radius, outline="cyan", width=1
+            cx - radius, cy - radius, cx + radius, cy + radius, outline=circle_colour, width=1
         )
+
+    def get_selected_colour_hex(self):
+        colour_map = {
+            "Blue": "#00B7FF",
+            "Purple": "#BB86FC",
+            "Grayscale": "#D0D0D0",
+        }
+        return colour_map.get(self.colour_menu.get(), "#00B7FF")
+
+    def start_live_recording(self):
+        output_root = "output"
+        os.makedirs(output_root, exist_ok=True)
+        self.frames_dir = tempfile.mkdtemp(prefix="live_frames_", dir=output_root)
+        self.frame_index = 0
+        self.record_frames = True
+        self.progress_bar.set(0)
+        self.progress_mode_label.configure(text="Mode: Recording while playing")
+
+    def stop_live_recording(self, clear_only=False):
+        self.record_frames = False
+        self.frame_index = 0
+        if clear_only and self.frames_dir:
+            shutil.rmtree(self.frames_dir, ignore_errors=True)
+            self.frames_dir = ""
+
+    def finish_live_recording(self):
+        if not self.frames_dir:
+            self.stop_live_recording(clear_only=True)
+            return
+
+        if self.frame_index == 0:
+            self.stop_live_recording(clear_only=True)
+            self.status_label.configure(text="Status: No live frames captured")
+            return
+
+        frames_dir = self.frames_dir
+        frame_rate = self.frame_rate
+
+        self.record_frames = False
+        self.frames_dir = ""
+        self.frame_index = 0
+        self.is_encoding = True
+        self.status_label.configure(text="Status: Encoding live video...")
+        self.progress_mode_label.configure(text="Mode: Encoding live recording")
+
+        thread = threading.Thread(
+            target=self._encode_live_video,
+            args=(frames_dir, frame_rate),
+            daemon=True,
+        )
+        thread.start()
+
+    def _encode_live_video(self, frames_dir, frame_rate):
+        try:
+            encode_frames_to_video(
+                frames_dir=frames_dir,
+                audio_file=self.audio_file,
+                output_file=self.live_output_path,
+                frame_rate=frame_rate,
+            )
+
+            def on_success():
+                self.is_encoding = False
+                self.progress_bar.set(1.0)
+                self.output_label.configure(text=f"Output file: {self.live_output_path}")
+                self.status_label.configure(text="Status: Live recording complete")
+                self.progress_mode_label.configure(text="Mode: Live export complete")
+
+            self.after(0, on_success)
+        except Exception as e:
+            def on_failure():
+                self.is_encoding = False
+                self.progress_bar.set(0)
+                self.status_label.configure(text=f"Status: Live export failed: {e}")
+                self.progress_mode_label.configure(text="Mode: Live export failed")
+
+            self.after(0, on_failure)
+        finally:
+            shutil.rmtree(frames_dir, ignore_errors=True)
 
     def animate_from_audio(self):
         if self.audio_data is None or not self.is_animating:
@@ -324,11 +460,28 @@ class SoundVisualisationApp(ctk.CTk):
             self.is_animating = False
             self.is_playing = False
             self.start_button.configure(text="Play", command=self.play_audio)
-            self.status_label.configure(text="Status: Animation complete")
+            if self.record_frames:
+                self.finish_live_recording()
+            else:
+                self.status_label.configure(text="Status: Animation complete")
             return
 
         self.draw_circle(radius)
+
+        if self.record_frames and self.frames_dir:
+            frame_path = os.path.join(self.frames_dir, f"frame_{self.frame_index:05d}.png")
+            save_circle_frame(
+                frame_path=frame_path,
+                radius=int(radius),
+                colour=self.get_selected_colour_hex(),
+            )
+            self.frame_index += 1
+
         self.current_chunk = next_chunk
+
+        if self.record_frames and self.audio_data is not None and len(self.audio_data) > 0:
+            progress = min(1.0, self.current_chunk / len(self.audio_data))
+            self.progress_bar.set(progress)
 
         delay_ms = get_delay_ms(self.chunk_size, self.sample_rate)
         self.after(delay_ms, self.animate_from_audio)
