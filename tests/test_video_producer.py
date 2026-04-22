@@ -13,7 +13,9 @@ def test_resolve_colour_known_and_fallback():
 
 def test_save_circle_frame_creates_file(tmp_path):
     frame_path = tmp_path / "frame.png"
-    video_producer.save_circle_frame(str(frame_path), radius=30, width=64, height=64, colour="#FFFFFF")
+    video_producer.save_circle_frame(
+        str(frame_path), radius=30, width=64, height=64, colour="#FFFFFF"
+    )
     assert frame_path.exists()
     assert frame_path.stat().st_size > 0
 

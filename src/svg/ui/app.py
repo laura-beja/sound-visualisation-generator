@@ -1,9 +1,9 @@
-import tkinter as tk
-from tkinter import filedialog
 import os
 import shutil
-import threading
 import tempfile
+import threading
+import tkinter as tk
+from tkinter import filedialog
 
 import customtkinter as ctk
 import pygame
@@ -289,11 +289,11 @@ class SoundVisualisationApp(ctk.CTk):
         if self.audio_file == "":
             self.status_label.configure(text="Status: Please select an audio file")
             return
-        
+
         self.status_label.configure(text="Status: Generating video...")
         self.progress_bar.set(0.2)
         self.progress_mode_label.configure(text="Mode: Generating video")
-        
+
         output_path = "output/visualization.mp4"
 
         try:
@@ -432,10 +432,14 @@ class SoundVisualisationApp(ctk.CTk):
 
             self.after(0, on_success)
         except Exception as e:
+            error_message = str(e)
+
             def on_failure():
                 self.is_encoding = False
                 self.progress_bar.set(0)
-                self.status_label.configure(text=f"Status: Live export failed: {e}")
+                self.status_label.configure(
+                    text=f"Status: Live export failed: {error_message}"
+                )
                 self.progress_mode_label.configure(text="Mode: Live export failed")
 
             self.after(0, on_failure)

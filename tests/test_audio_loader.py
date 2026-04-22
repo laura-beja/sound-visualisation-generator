@@ -34,11 +34,14 @@ def test_load_wav_audio_decodes_8bit_mono(tmp_path):
 
 def test_load_wav_audio_decodes_16bit_stereo_to_mono(tmp_path):
     wav_path = tmp_path / "stereo16.wav"
-    samples = np.array([
-        [1000, -1000],
-        [500, -500],
-        [0, 0],
-    ], dtype=np.int16)
+    samples = np.array(
+        [
+            [1000, -1000],
+            [500, -500],
+            [0, 0],
+        ],
+        dtype=np.int16,
+    )
     _write_wav(
         wav_path,
         channels=2,

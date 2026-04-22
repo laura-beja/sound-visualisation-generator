@@ -19,15 +19,15 @@ def resolve_colour(colour_mode):
 
 def save_circle_frame(frame_path, radius, width=500, height=320, colour="#00B7FF"):
     # create .png from single frame
-    image = Image.new('RGB', (width, height), "black")
+    image = Image.new("RGB", (width, height), "black")
     # create a draw object to draw on the image
     draw = ImageDraw.Draw(image)
     # calculate the center of the image
     cx = width // 2
     cy = height // 2
-    
+
     draw.ellipse((cx - radius, cy - radius, cx + radius, cy + radius), outline=colour, width=2)
-    
+
     image.save(frame_path)
 
 
@@ -57,8 +57,8 @@ def encode_frames_to_video(frames_dir, audio_file, output_file, frame_rate):
 
     subprocess.run(ffmpeg_cmd, check=True)
     return output_file
-    
-    
+
+
 def create_video_file(audio_file, output_file, colour_mode="Blue"):
     # get the folder that will contain the final .mp4 file
     output_dir = os.path.dirname(output_file)
@@ -85,7 +85,7 @@ def create_video_file(audio_file, output_file, colour_mode="Blue"):
     frame_index = 0
     frame_rate = sample_rate // chunk_size
     frame_colour = resolve_colour(colour_mode)
-    
+
     while True:
         radius, next_chunk = get_radius_from_chunk(
             audio_data=audio_data,
@@ -95,14 +95,14 @@ def create_video_file(audio_file, output_file, colour_mode="Blue"):
             max_radius=120,
             scale=400,
         )
-         
+
         if radius is None:
             break
-        
+
         frame_path = os.path.join(frames_dir, f"frame_{frame_index:05d}.png")
         # save the frame as a .png file with the radius of the circle based on the audio volume
         save_circle_frame(frame_path, int(radius), colour=frame_colour)
-                          
+
         current_chunk = next_chunk
         frame_index += 1
 
