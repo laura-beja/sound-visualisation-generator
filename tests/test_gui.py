@@ -67,6 +67,7 @@ def test_play_audio_recording_sets_mode(app, monkeypatch):
     app.record_live_var.set(True)
 
     monkeypatch.setattr(app, "buffer_audio", lambda: True)
+    monkeypatch.setattr(app, "_ask_save_path", lambda *_args: "/tmp/live.mp4")
     app.audio_data = [0] * 4096
     app.sample_rate = 44100
     monkeypatch.setattr(app, "animate_from_audio", lambda: None)
@@ -107,6 +108,7 @@ def test_generate_video_uses_selected_colour_mode(app, monkeypatch):
 
     app.audio_file = "fake.wav"
     app.colour_menu.set("Purple")
+    monkeypatch.setattr(app, "_ask_save_path", lambda *_args: "/tmp/output.mp4")
     monkeypatch.setattr(app_module, "create_video_file", fake_create_video_file)
 
     app.generate_video()
@@ -159,6 +161,7 @@ def test_generate_video_without_file_sets_status(app):
 
 def test_generate_video_failure_sets_failure_mode(app, monkeypatch):
     app.audio_file = "fake.wav"
+    monkeypatch.setattr(app, "_ask_save_path", lambda *_args: "/tmp/output.mp4")
 
     def fake_create_video_file(**kwargs):
         raise RuntimeError("boom")
@@ -203,7 +206,8 @@ def test_on_colour_change_draws_preview_when_animating(app, monkeypatch):
     assert called["drawn"] is True
 
 
-def test_start_and_stop_live_recording_clear_temp_dir(app):
+def test_start_and_stop_live_recording_clear_temp_dir(app, monkeypatch):
+    monkeypatch.setattr(app, "_ask_save_path", lambda *_args: "/tmp/live.mp4")
     app.start_live_recording()
     assert app.record_frames is True
     assert app.frames_dir
@@ -216,7 +220,8 @@ def test_start_and_stop_live_recording_clear_temp_dir(app):
     assert not os.path.exists(frames_dir)
 
 
-def test_finish_live_recording_with_no_frames_sets_status(app):
+def test_finish_live_recording_with_no_frames_sets_status(app, monkeypatch):
+    monkeypatch.setattr(app, "_ask_save_path", lambda *_args: "/tmp/live.mp4")
     app.start_live_recording()
     app.frame_index = 0
     app.finish_live_recording()

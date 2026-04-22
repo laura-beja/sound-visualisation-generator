@@ -73,7 +73,7 @@ class SoundVisualisationApp(ctk.CTk):
         self.record_frames = False
         self.frames_dir = ""
         self.frame_index = 0
-        self.live_output_path = "output/live_visualization.mp4"
+        self.live_output_path = ""
         self.is_encoding = False
 
         # pygame.mixer.init()
@@ -310,16 +310,28 @@ class SoundVisualisationApp(ctk.CTk):
 
         self.clear_preview()
 
+    def _ask_save_path(self, default_name="visualization.mp4"):
+        """Open a Save As dialog and return the chosen path, or empty string if cancelled."""
+        return filedialog.asksaveasfilename(
+            title="Save Video As",
+            initialfile=default_name,
+            defaultextension=".mp4",
+            filetypes=[("MP4 video", "*.mp4"), ("All files", "*.*")],
+        )
+
     def generate_video(self):
         if self.audio_file == "":
             self.status_label.configure(text="Status: Please select an audio file")
             return
 
+        output_path = self._ask_save_path("visualization.mp4")
+        if not output_path:
+            self.status_label.configure(text="Status: Save cancelled")
+            return
+
         self.status_label.configure(text="Status: Generating video...")
         self.progress_bar.set(0.2)
         self.progress_mode_label.configure(text="Mode: Generating video")
-
-        output_path = "output/visualization.mp4"
 
         try:
             # Call the export function from video_producer.py
@@ -417,9 +429,15 @@ class SoundVisualisationApp(ctk.CTk):
         return colour_map.get(self.colour_menu.get(), "#00B7FF")
 
     def start_live_recording(self):
-        output_root = "output"
-        os.makedirs(output_root, exist_ok=True)
-        self.frames_dir = tempfile.mkdtemp(prefix="live_frames_", dir=output_root)
+        save_path = self._ask_save_path("live_visualization.mp4")
+        if not save_path:
+            self.record_frames = False
+            self.status_label.configure(text="Status: Save cancelled — playing preview only")
+            self.progress_mode_label.configure(text="Mode: Preview only")
+            return
+
+        self.live_output_path = save_path
+        self.frames_dir = tempfile.mkdtemp(prefix="live_frames_")
         self.frame_index = 0
         self.record_frames = True
         self.progress_bar.set(0)
@@ -482,9 +500,7 @@ class SoundVisualisationApp(ctk.CTk):
             def on_failure():
                 self.is_encoding = False
                 self.progress_bar.set(0)
-                self.status_label.configure(
-                    text=f"Status: Live export failed: {error_message}"
-                )
+                self.status_label.configure(text=f"Status: Live export failed: {error_message}")
                 self.progress_mode_label.configure(text="Mode: Live export failed")
 
             self.after(0, on_failure)
