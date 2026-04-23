@@ -4,7 +4,6 @@ from tkinter import filedialog
 import customtkinter as ctk
 import pygame
 from PIL import Image, ImageTk
-
 from src.svg.audio_loader import load_wav_audio
 from src.svg.animator import (
     get_delay_ms,
@@ -39,7 +38,8 @@ class SoundVisualisationApp(ctk.CTk):
         self.audio_data = None
         self.sample_rate = 0
         self.current_chunk = 0
-        self.chunk_size = 1024
+        self.chunk_size = 512
+        self.scale = 0.9
 
         # pygame.mixer.init()
         pygame.mixer.init(frequency=44100, size=-16, channels=2)
@@ -85,9 +85,9 @@ class SoundVisualisationApp(ctk.CTk):
         self.scale_label.pack(pady=(10, 0))
 
         self.scale_slider = ctk.CTkSlider(
-            self.left_frame, from_=1, to=100, command=self.update_scale_value
+            self.left_frame, from_=0.1, to=1.5, command=self.update_scale_value
         )
-        self.scale_slider.set(1.0)
+        self.scale_slider.set(0.9)
         self.scale_slider.pack(padx=15, pady=5, fill="x")
 
         self.scale_value_label = ctk.CTkLabel(self.left_frame, text="1.0")
@@ -121,9 +121,9 @@ class SoundVisualisationApp(ctk.CTk):
         self.colour_label.pack(pady=(10, 0))
 
         self.colour_menu = ctk.CTkOptionMenu(
-            self.left_frame, values=["Blue", "Purple", "Grayscale"]
+            self.left_frame, values=["Red", "Green", "Cyan", "White"]
         )
-        self.colour_menu.set("Blue")
+        self.colour_menu.set("Red")
         self.colour_menu.pack(padx=15, pady=5, fill="x")
 
         self.generate_button = ctk.CTkButton(
@@ -170,12 +170,15 @@ class SoundVisualisationApp(ctk.CTk):
                     x, baseline_y,
                     x, baseline_y,
                     fill="cyan",
-                    width=2
+                    # width=2
+                    width = int(band_width * self.scale)
                 )
                 self.band_lines.append(line) 
 
     def update_scale_value(self, value):
-        self.scale_value_label.configure(text=f"{value:.1f}")
+        self.scale = float(value)
+        self.scale_value_label.configure(text=f"{value:.2f}")
+        print(value)
 
     def update_speed_value(self, value):
         self.speed_value_label.configure(text=f"{value:.1f}")
@@ -205,7 +208,6 @@ class SoundVisualisationApp(ctk.CTk):
 
         pygame.mixer.music.load(self.audio_file)
         pygame.mixer.music.play()
-
         self.is_playing = True
         self.is_animating = True
         self.current_chunk = 0
@@ -214,6 +216,9 @@ class SoundVisualisationApp(ctk.CTk):
         self.status_label.configure(text="Status: Playing audio")
 
         self.animate_from_audio()
+        # delay audio to in sync with graphics
+        # audio_delay_ms = 100
+        # self.after(audio_delay_ms, pygame.mixer.music.play)
 
     def stop_audio(self):
         pygame.mixer.music.stop()
@@ -302,6 +307,7 @@ class SoundVisualisationApp(ctk.CTk):
         )
 
     def animate_from_audio(self):
+        
         if self.audio_data is None or not self.is_animating:
             print("animate not working, no audio data")
             return
@@ -330,6 +336,7 @@ class SoundVisualisationApp(ctk.CTk):
             self.after(delay_ms, self.animate_from_audio)
 
         if do_spectrum == True:
+            # print(self.chunk_size)
             start = self.current_chunk
             end = start + self.chunk_size
 
@@ -349,15 +356,16 @@ class SoundVisualisationApp(ctk.CTk):
                 return
 
             bands = get_frequency_bands(
-                chunk=chunk,
-                sample_rate=self.sample_rate,
-                num_bands=32
+                chunk = chunk,
+                sample_rate = self.sample_rate,
+                num_bands = self.num_bands
             )
 
             if self.previous_bands is None:
                 smoothed = bands
             else:
-                smoothed = 0.8 * self.previous_bands + 0.2 * bands
+                # smoothed = bands
+                smoothed = 0.5 * self.previous_bands + 0.5 * bands
 
             self.previous_bands = smoothed
 
@@ -365,7 +373,8 @@ class SoundVisualisationApp(ctk.CTk):
 
             self.current_chunk += self.chunk_size
 
-            delay_ms = max(1, int((self.chunk_size / self.sample_rate) * 1000))
+            delay_ms = max(1, int((self.chunk_size / self.sample_rate) * 1000)) 
+            # delay_ms = 22 # optimization test
             self.after(delay_ms, self.animate_from_audio)  
 
     def start_audio_visual(self):

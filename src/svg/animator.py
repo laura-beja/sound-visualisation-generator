@@ -20,7 +20,7 @@ def get_radius_from_chunk(
     if len(chunk) == 0:
         return None, current_chunk
 
-    volume = np.sqrt(np.mean(chunk**2))
+    volume = np.sqrt(np.max(chunk**2))
 
     radius = int(min_radius + volume * scale)
     radius = max(min_radius, min(radius, max_radius))
@@ -34,15 +34,17 @@ def get_delay_ms(chunk_size, sample_rate):
         return 30
     return max(1, int((chunk_size / sample_rate) * 1000))
 
-def get_frequency_bands(chunk, sample_rate, num_bands=32):
+def get_frequency_bands(chunk, sample_rate, num_bands):
     if len(chunk) == 0:
         return np.zeros(num_bands, dtype=np.float32)
 
     window = np.hanning(len(chunk))
+    # window = chunk
     chunk = chunk * window
 
     fft_result = np.fft.rfft(chunk)
     magnitudes = np.abs(fft_result)
+    
 
     if len(magnitudes) > 0:
         magnitudes[0] = 0
@@ -51,11 +53,22 @@ def get_frequency_bands(chunk, sample_rate, num_bands=32):
     min_bin = 1
     max_bin = len(magnitudes) - 1
 
+    # log_edges = np.logspace(
+    #     np.log10(min_bin),
+    #     np.log10(max_bin),
+    #     num_bands + 1
+    # ).astype(int)
     log_edges = np.logspace(
         np.log10(min_bin),
         np.log10(max_bin),
         num_bands + 1
-    ).astype(int)
+    )
+    log_edges = np.round(log_edges).astype(int)
+    
+
+    for i in range(1, len(log_edges)):
+        if log_edges[i] <= log_edges[i - 1]:
+            log_edges[i] = log_edges[i - 1] + 1
 
     bands = np.zeros(num_bands, dtype=np.float32)
 
@@ -64,7 +77,7 @@ def get_frequency_bands(chunk, sample_rate, num_bands=32):
         end = log_edges[i + 1]
 
         if end > start:
-            bands[i] = np.mean(magnitudes[start:end])
+            bands[i] = np.max(magnitudes[start:end])
 
     # normalize
     max_val = np.max(bands)
@@ -82,9 +95,10 @@ def update_frequency_bands(self, bands):
         line = self.band_lines[i]
 
         height = band * max_height
-
+        
         self.preview_box.coords(
             line,
             self.preview_box.coords(line)[0], baseline_y,
             self.preview_box.coords(line)[0], baseline_y - height
         )
+
