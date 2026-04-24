@@ -39,6 +39,7 @@ class SoundVisualisationApp(ctk.CTk):
         self.chunk_size = 512
         self.scale = 0.9
         self.visual_mode = "spectrum"
+        self.volume = 1.0
 
         # pygame.mixer.init()
         pygame.mixer.init(frequency=44100, size=-16, channels=2)
@@ -99,17 +100,21 @@ class SoundVisualisationApp(ctk.CTk):
         self.scale_value_label = ctk.CTkLabel(self.left_frame, text="1.0")
         self.scale_value_label.pack(pady=(0, 10))
 
-        self.speed_label = ctk.CTkLabel(self.left_frame, text="Speed")
-        self.speed_label.pack(pady=(10, 0))
+        self.volume_label = ctk.CTkLabel(self.left_frame, text="Volume")
 
-        self.speed_slider = ctk.CTkSlider(
-            self.left_frame, from_=1, to=10, command=self.update_speed_value
+        self.volume_label.pack(pady=(10, 0))
+
+        self.volume_slider = ctk.CTkSlider(
+            self.left_frame,
+            from_=0.0,
+            to=1.0,
+            command=self.update_volume_value
         )
-        self.speed_slider.set(1.0)
-        self.speed_slider.pack(padx=15, pady=5, fill="x")
+        self.volume_slider.set(1.0)
+        self.volume_slider.pack(padx=15, pady=5, fill="x")
 
-        self.speed_value_label = ctk.CTkLabel(self.left_frame, text="1.0")
-        self.speed_value_label.pack(pady=(0, 10))
+        self.volume_value_label = ctk.CTkLabel(self.left_frame, text="1.00")
+        self.volume_value_label.pack(pady=(0, 10))
 
         self.detail_label = ctk.CTkLabel(self.left_frame, text="Detail")
         self.detail_label.pack(pady=(10, 0))
@@ -181,8 +186,12 @@ class SoundVisualisationApp(ctk.CTk):
         self.scale = float(value)
         self.scale_value_label.configure(text=f"{value:.2f}")
 
-    def update_speed_value(self, value):
-        self.speed_value_label.configure(text=f"{value:.1f}")
+    def update_volume_value(self, value):
+        self.volume = float(value)
+        self.volume_value_label.configure(text=f"{value:.2f}")
+
+        if pygame.mixer.get_init():
+            pygame.mixer.music.set_volume(self.volume)
 
     def update_detail_value(self, value):
         self.detail_value_label.configure(text=f"{int(value)}")
@@ -208,6 +217,7 @@ class SoundVisualisationApp(ctk.CTk):
             return
 
         pygame.mixer.music.load(self.audio_file)
+        pygame.mixer.music.set_volume(self.volume)
         pygame.mixer.music.play()
         self.is_playing = True
         self.is_animating = True
