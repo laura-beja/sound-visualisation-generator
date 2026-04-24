@@ -24,7 +24,7 @@ class SoundVisualisationApp(ctk.CTk):
         super().__init__()
         print("UI running 2")
         self.title("Sound Visualisation Generator")
-        self.geometry("1100x700")
+        # self.geometry("1100x700")
 
         self.audio_file = ""
         self.preview_image = None
@@ -58,6 +58,13 @@ class SoundVisualisationApp(ctk.CTk):
 
         self.build_left_side()
         self.build_right_side()
+        self.update_idletasks()
+
+        width = self.winfo_reqwidth()
+        height = self.winfo_reqheight()
+
+        self.geometry(f"{width}x{height}")
+        self.minsize(width, height)
 
         self.previous_bands = None
 
@@ -136,11 +143,6 @@ class SoundVisualisationApp(ctk.CTk):
         self.visual_mode_menu.set("Spectrum")
         self.visual_mode_menu.pack(padx=15, pady=5, fill="x")
 
-        self.generate_button = ctk.CTkButton(
-            self.left_frame, text="Generate Video", command=self.generate_video
-        )
-        self.generate_button.pack(padx=15, pady=(25, 10), fill="x")
-
         self.status_label = ctk.CTkLabel(self.left_frame, text="Status: Waiting")
         self.status_label.pack(pady=(10, 5))
 
@@ -154,6 +156,13 @@ class SoundVisualisationApp(ctk.CTk):
             self.right_frame, width=500, height=320, bg="#1a1a1a", highlightthickness=0
         )
         self.preview_box.pack(padx=20, pady=10)
+
+        self.generate_button = ctk.CTkButton(
+            self.right_frame,
+            text="Generate Video",
+            command=self.generate_video
+        )
+        self.generate_button.pack(padx=20, pady=(0, 10), fill="x")
 
         self.output_label = ctk.CTkLabel(
             self.right_frame, text="Output file: Not generated yet", wraplength=450, justify="left"
