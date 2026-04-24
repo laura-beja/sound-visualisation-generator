@@ -229,7 +229,7 @@ class SoundVisualisationApp(ctk.CTk):
         self.start_button.configure(text="Play", command=self.play_audio)
         self.status_label.configure(text="Status: Audio stopped")
 
-        self.clear_preview()
+        # self.clear_preview()
 
     def generate_video(self):
         if self.audio_file == "":
