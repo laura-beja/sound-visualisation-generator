@@ -87,18 +87,27 @@ def get_frequency_bands(chunk, sample_rate, num_bands):
     return bands
 
 def update_frequency_bands(self, bands):
+    canvas_width = 500
     canvas_height = 320
     baseline_y = canvas_height // 2
     max_height = 120
+
+    band_width = canvas_width / self.num_bands
+    line_width = max(1, int(band_width * self.scale))
+    colour = self.get_visual_colour()
 
     for i, band in enumerate(bands):
         line = self.band_lines[i]
 
         height = band * max_height
-        
+
+        x = i * band_width + band_width / 2
+
         self.preview_box.coords(
             line,
-            self.preview_box.coords(line)[0], baseline_y,
-            self.preview_box.coords(line)[0], baseline_y - height
+            x, baseline_y,
+            x, baseline_y - height
         )
+
+        self.preview_box.itemconfig(line, width=line_width, fill=colour)
 

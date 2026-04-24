@@ -169,7 +169,7 @@ class SoundVisualisationApp(ctk.CTk):
                 line = self.preview_box.create_line(
                     x, baseline_y,
                     x, baseline_y,
-                    fill="cyan",
+                    fill=self.get_visual_colour(),
                     # width=2
                     width = int(band_width * self.scale)
                 )
@@ -178,7 +178,6 @@ class SoundVisualisationApp(ctk.CTk):
     def update_scale_value(self, value):
         self.scale = float(value)
         self.scale_value_label.configure(text=f"{value:.2f}")
-        print(value)
 
     def update_speed_value(self, value):
         self.speed_value_label.configure(text=f"{value:.1f}")
@@ -376,6 +375,20 @@ class SoundVisualisationApp(ctk.CTk):
             delay_ms = max(1, int((self.chunk_size / self.sample_rate) * 1000)) 
             # delay_ms = 22 # optimization test
             self.after(delay_ms, self.animate_from_audio)  
+    
+    def get_visual_colour(self):
+        colour = self.colour_menu.get()
+
+        if colour == "Red":
+            return "red"
+        elif colour == "Green":
+            return "lime"
+        elif colour == "Cyan":
+            return "cyan"
+        elif colour == "White":
+            return "white"
+
+        return "cyan"
 
     def start_audio_visual(self):
         self.is_animating = True
