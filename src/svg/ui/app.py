@@ -1,6 +1,7 @@
 import tkinter as tk
 from tkinter import filedialog
-
+import math
+import time
 import customtkinter as ctk
 import pygame
 from PIL import Image, ImageTk
@@ -37,9 +38,10 @@ class SoundVisualisationApp(ctk.CTk):
         self.sample_rate = 0
         self.current_chunk = 0
         self.chunk_size = 512
-        self.scale = 0.9
+        self.thickness = 0.9
         self.visual_mode = "spectrum"
         self.volume = 1.0
+        self.modulation = 5
 
         # pygame.mixer.init()
         pygame.mixer.init(frequency=44100, size=-16, channels=2)
@@ -88,17 +90,17 @@ class SoundVisualisationApp(ctk.CTk):
         )
         self.file_label.pack(padx=15, pady=(0, 15))
 
-        self.scale_label = ctk.CTkLabel(self.left_frame, text="Scale")
-        self.scale_label.pack(pady=(10, 0))
+        self.thickness_label = ctk.CTkLabel(self.left_frame, text="Thickness")
+        self.thickness_label.pack(pady=(10, 0))
 
-        self.scale_slider = ctk.CTkSlider(
-            self.left_frame, from_=0.1, to=1.5, command=self.update_scale_value
+        self.thickness_slider = ctk.CTkSlider(
+            self.left_frame, from_=0.1, to=1.5, command=self.update_thickness_value
         )
-        self.scale_slider.set(0.9)
-        self.scale_slider.pack(padx=15, pady=5, fill="x")
+        self.thickness_slider.set(0.9)
+        self.thickness_slider.pack(padx=15, pady=5, fill="x")
 
-        self.scale_value_label = ctk.CTkLabel(self.left_frame, text="1.0")
-        self.scale_value_label.pack(pady=(0, 10))
+        self.thickness_value_label = ctk.CTkLabel(self.left_frame, text="1.0")
+        self.thickness_value_label.pack(pady=(0, 10))
 
         self.volume_label = ctk.CTkLabel(self.left_frame, text="Volume")
 
@@ -116,17 +118,17 @@ class SoundVisualisationApp(ctk.CTk):
         self.volume_value_label = ctk.CTkLabel(self.left_frame, text="1.00")
         self.volume_value_label.pack(pady=(0, 10))
 
-        self.detail_label = ctk.CTkLabel(self.left_frame, text="Detail")
-        self.detail_label.pack(pady=(10, 0))
+        self.modulation_label = ctk.CTkLabel(self.left_frame, text="Modulation")
+        self.modulation_label.pack(pady=(10, 0))
 
-        self.detail_slider = ctk.CTkSlider(
-            self.left_frame, from_=1, to=10, number_of_steps=9, command=self.update_detail_value
+        self.modulation_slider = ctk.CTkSlider(
+            self.left_frame, from_=1, to=10, number_of_steps=9, command=self.update_modulation_value
         )
-        self.detail_slider.set(5)
-        self.detail_slider.pack(padx=15, pady=5, fill="x")
+        self.modulation_slider.set(5)
+        self.modulation_slider.pack(padx=15, pady=5, fill="x")
 
-        self.detail_value_label = ctk.CTkLabel(self.left_frame, text="5")
-        self.detail_value_label.pack(pady=(0, 10))
+        self.modulation_value_label = ctk.CTkLabel(self.left_frame, text="5")
+        self.modulation_value_label.pack(pady=(0, 10))
 
         self.colour_label = ctk.CTkLabel(self.left_frame, text="Colour Mode")
         self.colour_label.pack(pady=(10, 0))
@@ -182,9 +184,9 @@ class SoundVisualisationApp(ctk.CTk):
         self.band_lines = []
         self.init_spectrum()
 
-    def update_scale_value(self, value):
-        self.scale = float(value)
-        self.scale_value_label.configure(text=f"{value:.2f}")
+    def update_thickness_value(self, value):
+        self.thickness = float(value)
+        self.thickness_value_label.configure(text=f"{value:.2f}")
 
     def update_volume_value(self, value):
         self.volume = float(value)
@@ -193,8 +195,9 @@ class SoundVisualisationApp(ctk.CTk):
         if pygame.mixer.get_init():
             pygame.mixer.music.set_volume(self.volume)
 
-    def update_detail_value(self, value):
-        self.detail_value_label.configure(text=f"{int(value)}")
+    def update_modulation_value(self, value):
+        self.modulation = int(value)
+        self.modulation_value_label.configure(text=f"{self.modulation}")
 
     def select_audio(self):
         file_path = filedialog.askopenfilename(
@@ -247,16 +250,16 @@ class SoundVisualisationApp(ctk.CTk):
             self.status_label.configure(text="Status: Please select an audio file")
             return
 
-        scale = self.scale_slider.get()
+        scale = self.thickness_slider.get()
         speed = self.speed_slider.get()
-        detail = int(self.detail_slider.get())
+        modulation = int(self.modulation_slider.get())
         colour = self.colour_menu.get()
 
         self.status_label.configure(text="Status: Generating...")
         self.progress_bar.set(0.25)
 
         self.preview_box.delete("all")
-        self.preview_box.create_oval(150, 60, 350, 260, outline="cyan", width=int(5 * self.scale))
+        self.preview_box.create_oval(150, 60, 350, 260, outline="cyan", width=int(5 * self.thickness))
 
         self.progress_bar.set(0.75)
 
@@ -268,7 +271,7 @@ class SoundVisualisationApp(ctk.CTk):
             text=(
                 f"Status: Generation complete | "
                 f"Scale {scale:.1f}, Speed {speed:.1f}, "
-                f"Detail {detail}, Colour {colour}"
+                f"Modulation {modulation}, Colour {colour}"
             )
         )
 
@@ -309,12 +312,25 @@ class SoundVisualisationApp(ctk.CTk):
 
         canvas_width = 500
         canvas_height = 320
-
         cx = canvas_width // 2
         cy = canvas_height // 2
 
+        noise_amount = self.get_noise_amount()
+        t = time.perf_counter()
+
+        radius_wobble = math.sin(t * 4.0) * noise_amount * 10
+        radius = radius + radius_wobble
+
+
+        base_width = 10 * self.thickness
+        width_wobble = math.sin(t * 8.0) * noise_amount * 4
+        line_width = max(1, int(base_width + width_wobble))
+
         self.preview_box.create_oval(
-            cx - radius, cy - radius, cx + radius, cy + radius, outline=self.get_visual_colour(), width=int(5 * self.scale)
+            cx - radius, cy - radius,
+            cx + radius, cy + radius,
+            outline=self.get_visual_colour(),
+            width=line_width
         )
 
     def animate_from_audio(self):
@@ -424,7 +440,7 @@ class SoundVisualisationApp(ctk.CTk):
                 x, baseline_y,
                 x, baseline_y,
                 fill=self.get_visual_colour(),
-                width=int(band_width * self.scale)
+                width=int(band_width * self.thickness)
             )
 
             self.band_lines.append(line)
@@ -444,10 +460,13 @@ class SoundVisualisationApp(ctk.CTk):
                 x, baseline_y,
                 x, baseline_y,
                 fill=self.get_visual_colour(),
-                width=int(band_width * self.scale)
+                width=int(band_width * self.thickness)
             )
 
             self.band_lines.append(line)
+
+    def get_noise_amount(self):
+        return (self.modulation - 1) / 9.0
 
     def start_audio_visual(self):
         self.is_animating = True

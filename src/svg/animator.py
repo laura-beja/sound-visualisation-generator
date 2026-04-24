@@ -1,5 +1,6 @@
 import numpy as np
-
+import math
+import time
 
 def get_radius_from_chunk(
     audio_data,
@@ -91,15 +92,19 @@ def update_frequency_bands(self, bands):
     canvas_height = 320
     baseline_y = canvas_height // 2
     max_height = 120
+    noise_amount = self.get_noise_amount()
+    t = time.perf_counter()
 
     band_width = canvas_width / self.num_bands
-    line_width = max(1, int(band_width * self.scale))
+    base_width = band_width * self.thickness
     colour = self.get_visual_colour()
 
     for i, band in enumerate(bands):
         line = self.band_lines[i]
 
         height = band * max_height
+        width_wobble = math.sin(t * 8.0 + i * 0.9) * noise_amount * 8
+        line_width = max(1, int(base_width + width_wobble))
 
         x = i * band_width + band_width / 2
 
