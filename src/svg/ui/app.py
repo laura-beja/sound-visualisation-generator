@@ -18,8 +18,6 @@ from src.svg.animator import (
 ctk.set_appearance_mode("dark")
 ctk.set_default_color_theme("blue")
 
-do_circle = False
-do_spectrum = True
 
 class SoundVisualisationApp(ctk.CTk):
     def __init__(self):
@@ -40,6 +38,7 @@ class SoundVisualisationApp(ctk.CTk):
         self.current_chunk = 0
         self.chunk_size = 512
         self.scale = 0.9
+        self.visual_mode = "spectrum"
 
         # pygame.mixer.init()
         pygame.mixer.init(frequency=44100, size=-16, channels=2)
@@ -126,6 +125,17 @@ class SoundVisualisationApp(ctk.CTk):
         self.colour_menu.set("Red")
         self.colour_menu.pack(padx=15, pady=5, fill="x")
 
+        self.visual_mode_label = ctk.CTkLabel(self.left_frame, text="Visualisation")
+        self.visual_mode_label.pack(pady=(10, 0))
+
+        self.visual_mode_menu = ctk.CTkOptionMenu(
+            self.left_frame,
+            values=["Spectrum", "Circle"],
+            command=self.update_visual_mode
+        )
+        self.visual_mode_menu.set("Spectrum")
+        self.visual_mode_menu.pack(padx=15, pady=5, fill="x")
+
         self.generate_button = ctk.CTkButton(
             self.left_frame, text="Generate Video", command=self.generate_video
         )
@@ -154,26 +164,9 @@ class SoundVisualisationApp(ctk.CTk):
         self.progress_bar.pack(padx=20, pady=10, fill="x")
         self.progress_bar.set(0)
 
-        if do_spectrum == True:
-            self.num_bands = 32
-            self.band_lines = []
-
-            canvas_width = 500
-            canvas_height = 320
-            baseline_y = canvas_height // 2
-            band_width = canvas_width / self.num_bands
-
-            for i in range(self.num_bands):
-                x = i * band_width + band_width / 2
-
-                line = self.preview_box.create_line(
-                    x, baseline_y,
-                    x, baseline_y,
-                    fill=self.get_visual_colour(),
-                    # width=2
-                    width = int(band_width * self.scale)
-                )
-                self.band_lines.append(line) 
+        self.num_bands = 32
+        self.band_lines = []
+        self.init_spectrum()
 
     def update_scale_value(self, value):
         self.scale = float(value)
@@ -244,7 +237,7 @@ class SoundVisualisationApp(ctk.CTk):
         self.progress_bar.set(0.25)
 
         self.preview_box.delete("all")
-        self.preview_box.create_oval(150, 60, 350, 260, outline="cyan", width=1)
+        self.preview_box.create_oval(150, 60, 350, 260, outline="cyan", width=int(5 * self.scale))
 
         self.progress_bar.set(0.75)
 
@@ -302,7 +295,7 @@ class SoundVisualisationApp(ctk.CTk):
         cy = canvas_height // 2
 
         self.preview_box.create_oval(
-            cx - radius, cy - radius, cx + radius, cy + radius, outline="cyan", width=1
+            cx - radius, cy - radius, cx + radius, cy + radius, outline=self.get_visual_colour(), width=int(5 * self.scale)
         )
 
     def animate_from_audio(self):
@@ -311,7 +304,7 @@ class SoundVisualisationApp(ctk.CTk):
             print("animate not working, no audio data")
             return
         
-        if do_circle == True:
+        if self.visual_mode == "circle":
             radius, next_chunk = get_radius_from_chunk(
                 audio_data=self.audio_data,
                 current_chunk=self.current_chunk,
@@ -334,7 +327,7 @@ class SoundVisualisationApp(ctk.CTk):
             delay_ms = get_delay_ms(self.chunk_size, self.sample_rate)
             self.after(delay_ms, self.animate_from_audio)
 
-        if do_spectrum == True:
+        if self.visual_mode == "spectrum":
             # print(self.chunk_size)
             start = self.current_chunk
             end = start + self.chunk_size
@@ -389,6 +382,53 @@ class SoundVisualisationApp(ctk.CTk):
             return "white"
 
         return "cyan"
+    
+    def update_visual_mode(self, value):
+        self.visual_mode = value.lower()
+        self.preview_box.delete("all")
+
+        if self.visual_mode == "spectrum":
+            self.init_spectrum()
+
+    def init_spectrum(self):
+        self.band_lines = []
+
+        canvas_width = 500
+        canvas_height = 320
+        baseline_y = canvas_height // 2
+        band_width = canvas_width / self.num_bands
+
+        for i in range(self.num_bands):
+            x = i * band_width + band_width / 2
+
+            line = self.preview_box.create_line(
+                x, baseline_y,
+                x, baseline_y,
+                fill=self.get_visual_colour(),
+                width=int(band_width * self.scale)
+            )
+
+            self.band_lines.append(line)
+
+    def init_spectrum(self):
+        self.band_lines = []
+
+        canvas_width = 500
+        canvas_height = 320
+        baseline_y = canvas_height // 2
+        band_width = canvas_width / self.num_bands
+
+        for i in range(self.num_bands):
+            x = i * band_width + band_width / 2
+
+            line = self.preview_box.create_line(
+                x, baseline_y,
+                x, baseline_y,
+                fill=self.get_visual_colour(),
+                width=int(band_width * self.scale)
+            )
+
+            self.band_lines.append(line)
 
     def start_audio_visual(self):
         self.is_animating = True
