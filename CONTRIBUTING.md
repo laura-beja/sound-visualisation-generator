@@ -151,7 +151,7 @@ All code contributions should include tests:
    ruff check .
    ruff format --check .
    pytest -q```
-
+```
 
 ## Pull Request Process
 
