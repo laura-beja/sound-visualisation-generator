@@ -2,6 +2,7 @@ import numpy as np
 import math
 import time
 
+
 def get_radius_from_chunk(
     audio_data,
     current_chunk,
@@ -35,6 +36,7 @@ def get_delay_ms(chunk_size, sample_rate):
         return 30
     return max(1, int((chunk_size / sample_rate) * 1000))
 
+
 def get_frequency_bands(chunk, sample_rate, num_bands):
     if len(chunk) == 0:
         return np.zeros(num_bands, dtype=np.float32)
@@ -45,7 +47,6 @@ def get_frequency_bands(chunk, sample_rate, num_bands):
 
     fft_result = np.fft.rfft(chunk)
     magnitudes = np.abs(fft_result)
-    
 
     if len(magnitudes) > 0:
         magnitudes[0] = 0
@@ -59,13 +60,8 @@ def get_frequency_bands(chunk, sample_rate, num_bands):
     #     np.log10(max_bin),
     #     num_bands + 1
     # ).astype(int)
-    log_edges = np.logspace(
-        np.log10(min_bin),
-        np.log10(max_bin),
-        num_bands + 1
-    )
+    log_edges = np.logspace(np.log10(min_bin), np.log10(max_bin), num_bands + 1)
     log_edges = np.round(log_edges).astype(int)
-    
 
     for i in range(1, len(log_edges)):
         if log_edges[i] <= log_edges[i - 1]:
@@ -86,6 +82,7 @@ def get_frequency_bands(chunk, sample_rate, num_bands):
         bands = bands / max_val
 
     return bands
+
 
 def update_frequency_bands(self, bands):
     canvas_width = 500
@@ -108,11 +105,6 @@ def update_frequency_bands(self, bands):
 
         x = i * band_width + band_width / 2
 
-        self.preview_box.coords(
-            line,
-            x, baseline_y,
-            x, baseline_y - height
-        )
+        self.preview_box.coords(line, x, baseline_y, x, baseline_y - height)
 
         self.preview_box.itemconfig(line, width=line_width, fill=colour)
-

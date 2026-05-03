@@ -1,0 +1,110 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-latest, ubuntu-latest]
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -e .
+          pip install pyinstaller
+
+      - name: Build Windows executable
+        if: runner.os == 'Windows'
+        run: |
+          python -m PyInstaller --onefile --windowed --name SoundVisualiser --paths src main.py
+
+      - name: Build macOS app
+        if: runner.os == 'macOS'
+        run: |
+          python -m PyInstaller --windowed --name SoundVisualiser --paths src main.py
+
+      - name: Build Linux executable
+        if: runner.os == 'Linux'
+        run: |
+          python -m PyInstaller --onefile --windowed --name SoundVisualiser --paths src main.py
+
+      - name: Package Windows artifact
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          Compress-Archive -Path dist/SoundVisualiser.exe -DestinationPath SoundVisualiser-windows.zip
+
+      - name: Package macOS artifact
+        if: runner.os == 'macOS'
+        run: |
+          ditto -c -k --sequesterRsrc --keepParent dist/SoundVisualiser.app SoundVisualiser-macos.zip
+
+      - name: Package Linux artifact
+        if: runner.os == 'Linux'
+        run: |
+          tar -czf SoundVisualiser-linux.tar.gz -C dist SoundVisualiser
+
+      - name: Upload Windows artifact
+        if: runner.os == 'Windows'
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-build
+          path: SoundVisualiser-windows.zip
+
+      - name: Upload macOS artifact
+        if: runner.os == 'macOS'
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-build
+          path: SoundVisualiser-macos.zip
+
+      - name: Upload Linux artifact
+        if: runner.os == 'Linux'
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-build
+          path: SoundVisualiser-linux.tar.gz
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download all build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Show downloaded files
+        run: |
+          find artifacts -type f
+
+      - name: Upload to GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            artifacts/windows-build/SoundVisualiser-windows.zip
+            artifacts/macos-build/SoundVisualiser-macos.zip
+            artifacts/linux-build/SoundVisualiser-linux.tar.gz
