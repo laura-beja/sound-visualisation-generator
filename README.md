@@ -84,6 +84,7 @@ Each tagged release automatically builds platform-specific packages using GitHub
 
 - **Windows:** `SoundVisualiser-windows.zip`
 - **macOS:** `SoundVisualiser-macos.zip`
+-  **Linux:** `SoundVisualiser-linux.tar.gz` 
 
 This workflow uses platform-specific runners to build each package separately.
 
