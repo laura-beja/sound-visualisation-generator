@@ -1,6 +1,12 @@
 # sound-visualisation-generator
 A desktop tool that analyses an audio file and produces an audio-reactive Perlin noise video, with live controls for mapping bass/mids/highs to visual parameters
 
+
+
+https://github.com/user-attachments/assets/d861f429-a482-46a3-bf23-2317f7fccc3f
+
+
+
 ## Overview
 
 This project aims to create a simple application that takes an audio WAV file and generates a Perlin noise–based video that reacts to the sound. Users can adjust settings that influence how audio features (bass, mids, highs) are mapped to visual parameters such as scale, speed, colour, and detail.
