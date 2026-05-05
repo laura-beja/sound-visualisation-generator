@@ -16,6 +16,7 @@ This project is aimed at content creators, musicians, and anyone interested in g
 ## Requirements
 
 - Python 3.11+
+- Git
 - FFmpeg (required for video encoding)
 
 ## Installation
