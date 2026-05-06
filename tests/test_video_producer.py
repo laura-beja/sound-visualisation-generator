@@ -58,7 +58,14 @@ def test_create_video_file_generates_frames_and_encodes(monkeypatch, tmp_path):
 
     saved_frames = []
 
-    def fake_save_circle_frame(frame_path, radius, width=500, height=320, colour="#00B7FF"):
+    def fake_save_circle_frame(
+        frame_path,
+        radius,
+        width=500,
+        height=320,
+        colour="#00B7FF",
+        thickness=0.9,
+    ):
         saved_frames.append((frame_path, radius, colour))
         open(frame_path, "wb").close()
 
@@ -84,7 +91,7 @@ def test_create_video_file_generates_frames_and_encodes(monkeypatch, tmp_path):
     assert encoded["output_file"] == str(output_file)
     assert encoded["audio_file"] == "audio.wav"
     assert os.path.basename(encoded["frames_dir"]) == "frames"
-    assert encoded["frame_rate"] == 44100 // 1024
+    assert encoded["frame_rate"] == 44100 / 735
 
 
 def test_create_video_file_raises_when_no_frames(monkeypatch, tmp_path):
