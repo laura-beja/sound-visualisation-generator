@@ -18,7 +18,13 @@ from svg.animator import (
     update_frequency_bands,
 )
 from svg.audio_loader import load_wav_audio
-from svg.video_producer import create_video_file, encode_frames_to_video, save_circle_frame
+from svg.colours import resolve_colour
+from svg.video_producer import (
+    create_video_file,
+    encode_frames_to_video,
+    save_circle_frame,
+    save_spectrum_frame,
+)
 
 #  py -3.11 -m venv .venv
 # .venv\Scripts\Activate.ps1
@@ -75,7 +81,7 @@ class SoundVisualisationApp(ctk.CTk):
         self.sample_rate = 0
         self.current_chunk = 0
 
-        self.chunk_size = 512
+        self.chunk_size = 735
         self.thickness = 0.9
         self.visual_mode = "circle"
         self.volume = 1.0
@@ -199,9 +205,7 @@ class SoundVisualisationApp(ctk.CTk):
         self.visual_mode_menu.set("Circle")
         self.visual_mode_menu.pack(padx=15, pady=5, fill="x")
 
-        # (Generate button removed — video generation now triggered automatically by play)
-
-        # Output file entry + browse button (used for both live recording and export)
+        # Output file entry
         self.output_frame = ctk.CTkFrame(self.left_frame, fg_color="transparent")
         self.output_frame.pack(padx=15, pady=(10, 0), fill="x")
 
@@ -238,6 +242,7 @@ class SoundVisualisationApp(ctk.CTk):
 
         self.preview_box = tk.Canvas(self.right_frame, bg="#1a1a1a", highlightthickness=0)
         self.preview_box.pack(padx=20, pady=10, fill="both", expand=True)
+        self.preview_box.bind("<Configure>", self.on_preview_resize)
 
         self.preview_box.configure(width=500, height=320)
 
@@ -258,8 +263,6 @@ class SoundVisualisationApp(ctk.CTk):
             command=self.toggle_controls,
         )
         self.toggle_controls_button.grid(row=0, column=1, padx=(10, 0), sticky="ew")
-
-        # (Generate button removed — video generation now triggered automatically by play)
 
         self.output_label = ctk.CTkLabel(
             self.right_frame,
@@ -283,6 +286,7 @@ class SoundVisualisationApp(ctk.CTk):
     def update_thickness_value(self, value):
         self.thickness = float(value)
         self.thickness_value_label.configure(text=f"{value:.2f}")
+        self.refresh_preview_style()
 
     def update_volume_value(self, value):
         self.volume = float(value)
@@ -294,6 +298,7 @@ class SoundVisualisationApp(ctk.CTk):
     def update_modulation_value(self, value):
         self.modulation = int(value)
         self.modulation_value_label.configure(text=f"{self.modulation}")
+        self.refresh_preview_style()
 
     def on_colour_change(self, _value):
         if self.is_animating and self.audio_data is not None:
@@ -304,10 +309,12 @@ class SoundVisualisationApp(ctk.CTk):
                 chunk_size=self.chunk_size,
                 min_radius=30,
                 max_radius=120,
-                scale=400,
+                scale=int(400 * self.thickness),
             )
             if radius is not None:
                 self.draw_circle(radius)
+        else:
+            self.refresh_preview_style()
 
     def select_audio(self):
         file_path = filedialog.askopenfilename(
@@ -364,7 +371,7 @@ class SoundVisualisationApp(ctk.CTk):
         self.is_playing = True
         self.is_animating = True
         self.current_chunk = 0
-        self.frame_rate = max(1, self.sample_rate // self.chunk_size)
+        self.frame_rate = max(1.0, self.sample_rate / float(self.chunk_size))
 
         if self.record_live_var.get():
             self.start_live_recording()
@@ -372,7 +379,7 @@ class SoundVisualisationApp(ctk.CTk):
             self.stop_live_recording(clear_only=True)
 
         # decide whether to animate preview: if recording is requested but not enabled
-        # (e.g. no save path provided), suppress animation until user provides a path
+        # if no save path is provided, suppress animation until user provides a path
         should_animate = True
         if self.record_live_var.get() and not self.record_frames:
             should_animate = False
@@ -401,7 +408,7 @@ class SoundVisualisationApp(ctk.CTk):
         except Exception:
             pass
 
-        # If user has specified an output path and is NOT recording live,
+        # If user has specified an output path and is not recording live,
         # automatically generate the full video in a background thread.
         out_path = None
         try:
@@ -420,6 +427,7 @@ class SoundVisualisationApp(ctk.CTk):
                         audio_file=self.audio_file,
                         output_file=out_path,
                         colour_mode=self.colour_menu.get(),
+                        chunk_size=self.chunk_size,
                         thickness=self.thickness,
                         modulation=self.modulation,
                     )
@@ -511,12 +519,26 @@ class SoundVisualisationApp(ctk.CTk):
         def _generate():
             self.progress_mode_label.configure(text="Mode: Generating video")
             try:
+                # pass a style_callback so generation reflects current control state
+                def style_callback(frame_index, current_chunk):
+                    try:
+                        return {
+                            "thickness": self.thickness,
+                            "modulation": self.modulation,
+                            "colour_mode": self.colour_menu.get(),
+                            "visual_mode": self.visual_mode,
+                        }
+                    except Exception:
+                        return None
+
                 create_video_file(
                     audio_file=self.audio_file,
                     output_file=out_path,
                     colour_mode=self.colour_menu.get(),
+                    chunk_size=self.chunk_size,
                     thickness=self.thickness,
                     modulation=self.modulation,
+                    style_callback=style_callback,
                 )
 
                 def _done():
@@ -648,6 +670,7 @@ class SoundVisualisationApp(ctk.CTk):
                     audio_file=self.audio_file,
                     output_file=output_path,
                     colour_mode=self.colour_menu.get(),
+                    chunk_size=self.chunk_size,
                     thickness=self.thickness,
                     modulation=self.modulation,
                 )
@@ -655,14 +678,14 @@ class SoundVisualisationApp(ctk.CTk):
                 # Fall back for older/stubbed implementations that don't accept new kwargs
                 create_video_file(self.audio_file, output_path, self.colour_menu.get())
 
-            # If successful, update the GUI
+            # If successful update the GUI
             self.progress_bar.set(1.0)
             self.output_label.configure(text=f"Output file: {output_path}")
             self.status_label.configure(text="Status: Generation complete")
             self.progress_mode_label.configure(text="Mode: Generation complete")
 
         except Exception as e:
-            # If something fails, show the error in the GUI and terminal
+            # If something fails show the error in the GUI and terminal
             self.progress_bar.set(0)
             self.status_label.configure(text=f"Status: Generation failed: {e}")
             self.progress_mode_label.configure(text="Mode: Generation failed")
@@ -692,6 +715,27 @@ class SoundVisualisationApp(ctk.CTk):
     def clear_preview(self):
         self.preview_box.delete("all")
 
+    def get_preview_canvas_size(self):
+        self.preview_box.update_idletasks()
+
+        canvas_width = self.preview_box.winfo_width()
+        canvas_height = self.preview_box.winfo_height()
+
+        if canvas_width <= 1 or canvas_height <= 1:
+            canvas_width = 500
+            canvas_height = 320
+
+        return canvas_width, canvas_height
+
+    def on_preview_resize(self, _event=None):
+        if self.visual_mode != "spectrum":
+            return
+
+        if self.previous_bands is not None:
+            update_frequency_bands(self, self.previous_bands)
+        else:
+            self.init_spectrum()
+
     def buffer_audio(self):
         if not self.audio_file:
             self.status_label.configure(text="Status: Please select an audio file")
@@ -717,14 +761,7 @@ class SoundVisualisationApp(ctk.CTk):
     def draw_circle(self, radius):
         self.preview_box.delete("all")
 
-        self.preview_box.update_idletasks()
-
-        canvas_width = self.preview_box.winfo_width()
-        canvas_height = self.preview_box.winfo_height()
-
-        if canvas_width <= 1 or canvas_height <= 1:
-            canvas_width = 500
-            canvas_height = 320
+        canvas_width, canvas_height = self.get_preview_canvas_size()
 
         cx = canvas_width // 2
         cy = canvas_height // 2
@@ -749,12 +786,10 @@ class SoundVisualisationApp(ctk.CTk):
         )
 
     def get_selected_colour_hex(self):
-        colour_map = {
-            "Blue": "#00B7FF",
-            "Purple": "#BB86FC",
-            "Grayscale": "#D0D0D0",
-        }
-        return colour_map.get(self.colour_menu.get(), "#00B7FF")
+        try:
+            return resolve_colour(self.colour_menu.get())
+        except Exception:
+            return "#00B7FF"
 
     def start_live_recording(self):
         # Use pre-set output path if available, otherwise prompt the user
@@ -875,6 +910,7 @@ class SoundVisualisationApp(ctk.CTk):
                     frame_path=frame_path,
                     radius=int(radius),
                     colour=self.get_selected_colour_hex(),
+                    thickness=self.thickness,
                 )
                 self.frame_index += 1
 
@@ -921,6 +957,19 @@ class SoundVisualisationApp(ctk.CTk):
 
             update_frequency_bands(self, smoothed)
 
+            # record spectrum frame if requested
+            if self.record_frames and self.frames_dir:
+                frame_path = os.path.join(self.frames_dir, f"frame_{self.frame_index:05d}.png")
+                save_spectrum_frame(
+                    frame_path=frame_path,
+                    bands=smoothed,
+                    colour=self.get_selected_colour_hex(),
+                    thickness=self.thickness,
+                    modulation=self.modulation,
+                    frame_index=self.frame_index,
+                )
+                self.frame_index += 1
+
             self.current_chunk += self.chunk_size
 
             delay_ms = max(1, int((self.chunk_size / self.sample_rate) * 1000))
@@ -928,18 +977,11 @@ class SoundVisualisationApp(ctk.CTk):
             self.after(delay_ms, self.animate_from_audio)
 
     def get_visual_colour(self):
-        colour = self.colour_menu.get()
-
-        if colour == "Red":
-            return "red"
-        elif colour == "Green":
-            return "lime"
-        elif colour == "Cyan":
+        try:
+            # return a hex colour that Tkinter understands so preview matches exported video
+            return resolve_colour(self.colour_menu.get())
+        except Exception:
             return "cyan"
-        elif colour == "White":
-            return "white"
-
-        return "cyan"
 
     def update_visual_mode(self, value):
         self.visual_mode = value.lower()
@@ -951,8 +993,7 @@ class SoundVisualisationApp(ctk.CTk):
     def init_spectrum(self):
         self.band_lines = []
 
-        canvas_width = 500
-        canvas_height = 320
+        canvas_width, canvas_height = self.get_preview_canvas_size()
         baseline_y = canvas_height // 2
         band_width = canvas_width / self.num_bands
 
@@ -972,6 +1013,38 @@ class SoundVisualisationApp(ctk.CTk):
 
     def get_noise_amount(self):
         return (self.modulation - 1) / 9.0
+
+    def refresh_preview_style(self):
+        """Refresh the preview visuals to reflect current control settings."""
+        if self.visual_mode == "circle":
+            if self.audio_data is None:
+                return
+            preview_chunk = max(0, self.current_chunk - self.chunk_size)
+            radius, _ = get_radius_from_chunk(
+                audio_data=self.audio_data,
+                current_chunk=preview_chunk,
+                chunk_size=self.chunk_size,
+                min_radius=30,
+                max_radius=120,
+                scale=int(400 * self.thickness),
+            )
+            if radius is not None:
+                self.draw_circle(radius)
+
+        elif self.visual_mode == "spectrum":
+            if self.audio_data is None:
+                return
+            preview_chunk = max(0, self.current_chunk - self.chunk_size)
+            chunk = self.audio_data[preview_chunk : preview_chunk + self.chunk_size]
+            bands = get_frequency_bands(
+                chunk=chunk, sample_rate=self.sample_rate, num_bands=self.num_bands
+            )
+            if self.previous_bands is None:
+                smoothed = bands
+            else:
+                smoothed = 0.5 * self.previous_bands + 0.5 * bands
+            self.previous_bands = smoothed
+            update_frequency_bands(self, smoothed)
 
     def start_audio_visual(self):
         self.is_animating = True
