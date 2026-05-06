@@ -91,6 +91,8 @@ def _make_mock_self(num_bands=4):
     mock.get_noise_amount.return_value = 0.0
     mock.get_visual_colour.return_value = "#00B7FF"
     mock.band_lines = [MagicMock() for _ in range(num_bands)]
+    mock.preview_box.winfo_width.return_value = 500
+    mock.preview_box.winfo_height.return_value = 320
     return mock
 
 
@@ -106,6 +108,21 @@ def test_update_frequency_bands_calls_itemconfig_for_each_band():
     bands = np.array([0.5, 0.8, 0.3, 1.0], dtype=np.float32)
     update_frequency_bands(mock_self, bands)
     assert mock_self.preview_box.itemconfig.call_count == 4
+
+
+def test_update_frequency_bands_uses_live_canvas_size_for_positions():
+    mock_self = _make_mock_self(num_bands=2)
+    mock_self.preview_box.winfo_width.return_value = 900
+    mock_self.preview_box.winfo_height.return_value = 600
+    bands = np.array([0.5, 1.0], dtype=np.float32)
+
+    update_frequency_bands(mock_self, bands)
+
+    first_call = mock_self.preview_box.coords.call_args_list[0].args
+    second_call = mock_self.preview_box.coords.call_args_list[1].args
+
+    assert first_call[1:] == (225.0, 300, 225.0, 187.5)
+    assert second_call[1:] == (675.0, 300, 675.0, 75.0)
 
 
 def test_update_frequency_bands_zero_bands_no_calls():

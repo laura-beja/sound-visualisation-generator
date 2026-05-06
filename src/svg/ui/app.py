@@ -242,6 +242,7 @@ class SoundVisualisationApp(ctk.CTk):
 
         self.preview_box = tk.Canvas(self.right_frame, bg="#1a1a1a", highlightthickness=0)
         self.preview_box.pack(padx=20, pady=10, fill="both", expand=True)
+        self.preview_box.bind("<Configure>", self.on_preview_resize)
 
         self.preview_box.configure(width=500, height=320)
 
@@ -714,6 +715,27 @@ class SoundVisualisationApp(ctk.CTk):
     def clear_preview(self):
         self.preview_box.delete("all")
 
+    def get_preview_canvas_size(self):
+        self.preview_box.update_idletasks()
+
+        canvas_width = self.preview_box.winfo_width()
+        canvas_height = self.preview_box.winfo_height()
+
+        if canvas_width <= 1 or canvas_height <= 1:
+            canvas_width = 500
+            canvas_height = 320
+
+        return canvas_width, canvas_height
+
+    def on_preview_resize(self, _event=None):
+        if self.visual_mode != "spectrum":
+            return
+
+        if self.previous_bands is not None:
+            update_frequency_bands(self, self.previous_bands)
+        else:
+            self.init_spectrum()
+
     def buffer_audio(self):
         if not self.audio_file:
             self.status_label.configure(text="Status: Please select an audio file")
@@ -739,14 +761,7 @@ class SoundVisualisationApp(ctk.CTk):
     def draw_circle(self, radius):
         self.preview_box.delete("all")
 
-        self.preview_box.update_idletasks()
-
-        canvas_width = self.preview_box.winfo_width()
-        canvas_height = self.preview_box.winfo_height()
-
-        if canvas_width <= 1 or canvas_height <= 1:
-            canvas_width = 500
-            canvas_height = 320
+        canvas_width, canvas_height = self.get_preview_canvas_size()
 
         cx = canvas_width // 2
         cy = canvas_height // 2
@@ -978,8 +993,7 @@ class SoundVisualisationApp(ctk.CTk):
     def init_spectrum(self):
         self.band_lines = []
 
-        canvas_width = 500
-        canvas_height = 320
+        canvas_width, canvas_height = self.get_preview_canvas_size()
         baseline_y = canvas_height // 2
         band_width = canvas_width / self.num_bands
 

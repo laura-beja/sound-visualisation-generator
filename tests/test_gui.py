@@ -206,6 +206,24 @@ def test_on_colour_change_draws_preview_when_animating(app, monkeypatch):
     assert called["drawn"] is True
 
 
+def test_init_spectrum_uses_current_canvas_size(app, monkeypatch):
+    app.num_bands = 2
+    app.preview_box.winfo_width = lambda: 900
+    app.preview_box.winfo_height = lambda: 600
+    created_lines = []
+
+    def fake_create_line(*args, **kwargs):
+        created_lines.append(args)
+        return len(created_lines)
+
+    monkeypatch.setattr(app.preview_box, "create_line", fake_create_line)
+
+    app.init_spectrum()
+
+    assert created_lines[0] == (225.0, 300, 225.0, 300)
+    assert created_lines[1] == (675.0, 300, 675.0, 300)
+
+
 def test_start_and_stop_live_recording_clear_temp_dir(app, monkeypatch):
     monkeypatch.setattr(app, "_ask_save_path", lambda *_args: "/tmp/live.mp4")
     app.start_live_recording()

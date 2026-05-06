@@ -88,10 +88,19 @@ def get_frequency_bands(chunk, sample_rate, num_bands):
 def update_frequency_bands(self, bands):
     if self.num_bands == 0:
         return
-    canvas_width = 500
-    canvas_height = 320
+
+    # ensure canvas size is up to date for scaling
+    self.preview_box.update_idletasks()
+    canvas_width = self.preview_box.winfo_width()
+    canvas_height = self.preview_box.winfo_height()
+
+    # fallback to default size if canvas is not properly initialized
+    if canvas_width <= 1 or canvas_height <= 1:
+        canvas_width = 500
+        canvas_height = 320
+
     baseline_y = canvas_height // 2
-    max_height = 120
+    max_height = max(1, int(canvas_height * 0.375))
     noise_amount = self.get_noise_amount()
     t = time.perf_counter()
 
