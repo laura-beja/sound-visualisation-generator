@@ -1,24 +1,24 @@
+import math
 import os
 import shutil
 import tempfile
 import threading
+import time
 import tkinter as tk
 from tkinter import filedialog
-import math
-import time
+
 import customtkinter as ctk
 import pygame
 from PIL import Image, ImageTk
 
-from svg.audio_loader import load_wav_audio
 from svg.animator import (
     get_delay_ms,
-    get_radius_from_chunk,
     get_frequency_bands,
+    get_radius_from_chunk,
     update_frequency_bands,
 )
+from svg.audio_loader import load_wav_audio
 from svg.video_producer import create_video_file, encode_frames_to_video, save_circle_frame
-
 
 #  py -3.11 -m venv .venv
 # .venv\Scripts\Activate.ps1
@@ -433,9 +433,9 @@ class SoundVisualisationApp(ctk.CTk):
                     self.after(0, _done)
                 except Exception as e:
 
-                    def _fail():
+                    def _fail(_e=e):
                         self.progress_bar.set(0)
-                        self.status_label.configure(text=f"Status: Generation failed: {e}")
+                        self.status_label.configure(text=f"Status: Generation failed: {_e}")
                         self.progress_mode_label.configure(text="Mode: Generation failed")
 
                     self.after(0, _fail)
@@ -528,9 +528,9 @@ class SoundVisualisationApp(ctk.CTk):
                 self.after(0, _done)
             except Exception as e:
 
-                def _fail():
+                def _fail(_e=e):
                     self.progress_bar.set(0)
-                    self.status_label.configure(text=f"Status: Generation failed: {e}")
+                    self.status_label.configure(text=f"Status: Generation failed: {_e}")
                     self.progress_mode_label.configure(text="Mode: Generation failed")
 
                 self.after(0, _fail)
@@ -728,7 +728,6 @@ class SoundVisualisationApp(ctk.CTk):
 
         cx = canvas_width // 2
         cy = canvas_height // 2
-        circle_colour = self.get_selected_colour_hex()
 
         noise_amount = self.get_noise_amount()
         t = time.perf_counter()
@@ -948,28 +947,6 @@ class SoundVisualisationApp(ctk.CTk):
 
         if self.visual_mode == "spectrum":
             self.init_spectrum()
-
-    def init_spectrum(self):
-        self.band_lines = []
-
-        canvas_width = 500
-        canvas_height = 320
-        baseline_y = canvas_height // 2
-        band_width = canvas_width / self.num_bands
-
-        for i in range(self.num_bands):
-            x = i * band_width + band_width / 2
-
-            line = self.preview_box.create_line(
-                x,
-                baseline_y,
-                x,
-                baseline_y,
-                fill=self.get_visual_colour(),
-                width=int(band_width * self.thickness),
-            )
-
-            self.band_lines.append(line)
 
     def init_spectrum(self):
         self.band_lines = []

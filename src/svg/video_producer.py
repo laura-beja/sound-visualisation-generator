@@ -1,8 +1,8 @@
+import math
 import os
 import subprocess
 
 from PIL import Image, ImageDraw
-import math
 
 from svg.animator import get_radius_from_chunk
 from svg.audio_loader import load_wav_audio

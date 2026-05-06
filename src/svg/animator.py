@@ -1,6 +1,7 @@
-import numpy as np
 import math
 import time
+
+import numpy as np
 
 
 def get_radius_from_chunk(
