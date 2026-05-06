@@ -1021,7 +1021,7 @@ class SoundVisualisationApp(ctk.CTk):
             if self.audio_data is None:
                 return
             preview_chunk = max(0, self.current_chunk - self.chunk_size)
-            chunk = self.audio_data[preview_chunk: preview_chunk + self.chunk_size]
+            chunk = self.audio_data[preview_chunk : preview_chunk + self.chunk_size]
             bands = get_frequency_bands(
                 chunk=chunk, sample_rate=self.sample_rate, num_bands=self.num_bands
             )

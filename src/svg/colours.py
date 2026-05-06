@@ -3,6 +3,7 @@
 Keep a canonical mapping of human-facing names to hex values here so
 the preview and exported video use the same colours.
 """
+
 COLOUR_MODE_MAP = {
     # UI-facing names (existing UI uses Red/Green/Cyan/White)
     "Red": "#FF0000",

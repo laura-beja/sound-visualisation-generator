@@ -42,6 +42,7 @@ def test_get_delay_ms_computes_positive_delay():
 
 # --- get_frequency_bands ---
 
+
 def test_get_frequency_bands_empty_chunk_returns_zeros():
     result = get_frequency_bands(np.array([], dtype=np.float32), 44100, 8)
     assert len(result) == 8
@@ -82,6 +83,7 @@ def test_get_frequency_bands_sine_wave_has_energy():
 
 # --- update_frequency_bands ---
 
+
 def _make_mock_self(num_bands=4):
     mock = MagicMock()
     mock.num_bands = num_bands
@@ -119,4 +121,3 @@ def test_update_frequency_bands_various_amplitudes(band_value):
     bands = np.array([band_value, band_value], dtype=np.float32)
     update_frequency_bands(mock_self, bands)
     assert mock_self.preview_box.coords.call_count == 2
-

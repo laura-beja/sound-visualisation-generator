@@ -29,8 +29,14 @@ def save_circle_frame(frame_path, radius, width=500, height=320, colour="#00B7FF
 
 
 def save_spectrum_frame(
-    frame_path, bands, width=500, height=320,
-    colour="#00B7FF", thickness=1, modulation=5, frame_index=0
+    frame_path,
+    bands,
+    width=500,
+    height=320,
+    colour="#00B7FF",
+    thickness=1,
+    modulation=5,
+    frame_index=0,
 ):
     """Render a simple spectrum-style frame using vertical bars for `bands`.
 
@@ -203,7 +209,7 @@ def create_video_file(
 
         if str(visual_mode).lower().startswith("spec"):
             # compute frequency bands for this chunk and draw spectrum frame
-            chunk = audio_data[current_chunk: current_chunk + chunk_size]
+            chunk = audio_data[current_chunk : current_chunk + chunk_size]
             bands = get_frequency_bands(chunk=chunk, sample_rate=sample_rate, num_bands=num_bands)
             save_spectrum_frame(
                 frame_path,
