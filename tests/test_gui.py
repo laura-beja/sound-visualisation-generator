@@ -41,9 +41,9 @@ def test_default_audio_file(app):
 
 
 def test_slider_defaults(app):
-    assert round(app.scale_slider.get(), 1) == 1.0
-    assert round(app.speed_slider.get(), 1) == 1.0
-    assert int(app.detail_slider.get()) == 5
+    assert round(app.thickness_slider.get(), 1) == 0.9
+    assert round(app.volume_slider.get(), 1) == 1.0
+    assert int(app.modulation_slider.get()) == 5
 
 
 def test_play_audio_preview_only_sets_mode(app, monkeypatch):
@@ -65,9 +65,9 @@ def test_play_audio_preview_only_sets_mode(app, monkeypatch):
 def test_play_audio_recording_sets_mode(app, monkeypatch):
     app.audio_file = "fake.wav"
     app.record_live_var.set(True)
-
     monkeypatch.setattr(app, "buffer_audio", lambda: True)
-    monkeypatch.setattr(app, "_ask_save_path", lambda *_args: "/tmp/live.mp4")
+    # require output path to be pre-set when recording is enabled
+    app.live_output_path = "/tmp/live.mp4"
     app.audio_data = [0] * 4096
     app.sample_rate = 44100
     monkeypatch.setattr(app, "animate_from_audio", lambda: None)

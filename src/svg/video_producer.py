@@ -1,3 +1,4 @@
+import math
 import os
 import subprocess
 
@@ -59,7 +60,7 @@ def encode_frames_to_video(frames_dir, audio_file, output_file, frame_rate):
     return output_file
 
 
-def create_video_file(audio_file, output_file, colour_mode="Blue"):
+def create_video_file(audio_file, output_file, colour_mode="Blue", *, thickness=0.9, modulation=5):
     # get the folder that will contain the final .mp4 file
     output_dir = os.path.dirname(output_file)
 
@@ -85,6 +86,9 @@ def create_video_file(audio_file, output_file, colour_mode="Blue"):
     frame_index = 0
     frame_rate = sample_rate // chunk_size
     frame_colour = resolve_colour(colour_mode)
+    noise_amount = (modulation - 1) / 9.0
+    base_scale = 400
+    scale = int(base_scale * thickness)
 
     while True:
         radius, next_chunk = get_radius_from_chunk(
@@ -93,15 +97,19 @@ def create_video_file(audio_file, output_file, colour_mode="Blue"):
             chunk_size=chunk_size,
             min_radius=30,
             max_radius=120,
-            scale=400,
+            scale=scale,
         )
 
         if radius is None:
             break
 
+        # apply a small wobble based on modulation for visual interest
+        wobble = math.sin(frame_index * 4.0) * noise_amount * 10
+        adj_radius = int(max(1, min(radius + wobble, 10000)))
+
         frame_path = os.path.join(frames_dir, f"frame_{frame_index:05d}.png")
-        # save the frame as a .png file with the radius of the circle based on the audio volume
-        save_circle_frame(frame_path, int(radius), colour=frame_colour)
+        # save the frame as a .png file with the (possibly) adjusted radius
+        save_circle_frame(frame_path, int(adj_radius), colour=frame_colour)
 
         current_chunk = next_chunk
         frame_index += 1
