@@ -1,6 +1,7 @@
-import numpy as np
 import math
 import time
+
+import numpy as np
 
 
 def get_radius_from_chunk(
@@ -85,6 +86,8 @@ def get_frequency_bands(chunk, sample_rate, num_bands):
 
 
 def update_frequency_bands(self, bands):
+    if self.num_bands == 0:
+        return
     canvas_width = 500
     canvas_height = 320
     baseline_y = canvas_height // 2

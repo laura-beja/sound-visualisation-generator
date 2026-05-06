@@ -1,9 +1,10 @@
+import math
 import os
 import subprocess
 
 from PIL import Image, ImageDraw
-import math
-from svg.animator import get_radius_from_chunk, get_frequency_bands
+
+from svg.animator import get_frequency_bands, get_radius_from_chunk
 from svg.audio_loader import load_wav_audio
 from svg.colours import resolve_colour
 
@@ -27,7 +28,10 @@ def save_circle_frame(frame_path, radius, width=500, height=320, colour="#00B7FF
     image.save(frame_path)
 
 
-def save_spectrum_frame(frame_path, bands, width=500, height=320, colour="#00B7FF", thickness=1, modulation=5, frame_index=0):
+def save_spectrum_frame(
+    frame_path, bands, width=500, height=320,
+    colour="#00B7FF", thickness=1, modulation=5, frame_index=0
+):
     """Render a simple spectrum-style frame using vertical bars for `bands`.
 
     `bands` is an iterable of floats in [0..1].
@@ -132,7 +136,6 @@ def create_video_file(
     frame_index = 0
     frame_rate = sample_rate / float(chunk_size)
     frame_colour = resolve_colour(colour_mode)
-    noise_amount = (modulation - 1) / 9.0
     base_scale = 400
     scale = int(base_scale * thickness)
 
